@@ -494,7 +494,7 @@ ${variant}`;
   var VERSION = "1.0.2";
   var TARGET_NAME = "bee simulation";
   var INITIAL_ELM_COMPILED_TIMESTAMP = Number(
-    "1664492287774"
+    "1664492406260"
   );
   var ORIGINAL_COMPILATION_MODE = "standard";
   var WEBSOCKET_PORT = "62600";
@@ -11827,7 +11827,7 @@ var $author$project$Main$createFlower = F4(
 								$ianmackenzie$elm_geometry$Direction3d$positiveZ,
 								{
 									length: $ianmackenzie$elm_units$Length$meters(0.25),
-									radius: $ianmackenzie$elm_units$Length$meters(0.35)
+									radius: $ianmackenzie$elm_units$Length$meters(offsets.radius)
 								}))))),
 			A2(
 				$author$project$Ecs$Entity$with,
@@ -11895,6 +11895,31 @@ var $elm$random$Random$map3 = F4(
 				return _Utils_Tuple2(
 					A3(func, a, b, c),
 					seed3);
+			});
+	});
+var $elm$random$Random$map4 = F5(
+	function (func, _v0, _v1, _v2, _v3) {
+		var genA = _v0.a;
+		var genB = _v1.a;
+		var genC = _v2.a;
+		var genD = _v3.a;
+		return $elm$random$Random$Generator(
+			function (seed0) {
+				var _v4 = genA(seed0);
+				var a = _v4.a;
+				var seed1 = _v4.b;
+				var _v5 = genB(seed1);
+				var b = _v5.a;
+				var seed2 = _v5.b;
+				var _v6 = genC(seed2);
+				var c = _v6.a;
+				var seed3 = _v6.b;
+				var _v7 = genD(seed3);
+				var d = _v7.a;
+				var seed4 = _v7.b;
+				return _Utils_Tuple2(
+					A4(func, a, b, c, d),
+					seed4);
 			});
 	});
 var $avh4$elm_color$Color$red = A4($avh4$elm_color$Color$RgbaSpace, 204 / 255, 0 / 255, 0 / 255, 1.0);
@@ -12000,15 +12025,16 @@ var $author$project$Main$spawnFlower = function (world) {
 					$avh4$elm_color$Color$red,
 					_List_fromArray(
 						[$avh4$elm_color$Color$blue])),
-				A4(
-					$elm$random$Random$map3,
-					F3(
-						function (x, y, angle) {
-							return {angle: angle, x: x, y: y};
+				A5(
+					$elm$random$Random$map4,
+					F4(
+						function (x, y, angle, radius) {
+							return {angle: angle, radius: radius, x: x, y: y};
 						}),
 					A2($elm$random$Random$float, -0.25, 0.25),
 					A2($elm$random$Random$float, -0.25, 0.25),
-					A2($elm$random$Random$float, -5, 5))),
+					A2($elm$random$Random$float, -5, 5),
+					A2($elm$random$Random$float, 0.25, 0.4))),
 			world.seed);
 		var _v1 = _v0.a;
 		var pos = _v1.a;

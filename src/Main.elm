@@ -218,7 +218,7 @@ createFlower startPos color offsets world =
             , FlowerG color
                 (Cylinder3d.centeredOn (Point3d.meters 0 0 0.5)
                     Direction3d.positiveZ
-                    { radius = Length.meters offset.radius
+                    { radius = Length.meters offsets.radius
                     , length = Length.meters 0.25
                     }
                     |> Cylinder3d.translateBy (Vector3d.meters offsets.x offsets.y 0)
