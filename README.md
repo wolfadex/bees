@@ -1,10 +1,17 @@
-# Elm Nix Template
+# Bees!!
 
-A very basic template for an [Elm](https://elm-lang.org/) project, using [Nix](https://nixos.org/) and [direnv](https://direnv.net/).
+A thing about bees!
 
 ## Getting Started
 
-- Make sure you have both Nix and direnv installed
-- Clone this repo, or use the GitHub `Use this template` button
-- Inside your cloned repo, run `direnv allow`
+### Prerequisites
+
+- [Nix](https://nixos.org/)
+- [direnv](https://direnv.net/)
+
+### Setup
+
+- Clone this repo
+- Inside the cloned repo, run `direnv allow`
+- Run `npm run dev`
 - Start coding!
