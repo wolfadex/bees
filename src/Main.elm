@@ -1,13 +1,12 @@
 module Main exposing (main)
 
-import AStar
 import AStar.Generalised
 import Angle
 import Browser
 import Browser.Events
 import Camera3d
-import Color
-import Cylinder3d
+import Color exposing (Color)
+import Cylinder3d exposing (Cylinder3d)
 import Dict
 import Direction3d
 import Ecs
@@ -19,7 +18,7 @@ import Hexagons.Hex exposing (Direction(..), Hex(..))
 import Hexagons.Layout
 import Hexagons.Map
 import Html
-import Length
+import Length exposing (Meters)
 import Pixels
 import Point3d
 import Random exposing (Seed)
@@ -27,7 +26,8 @@ import Random.List
 import Scene3d
 import Scene3d.Material
 import Set exposing (Set)
-import Sphere3d
+import Sphere3d exposing (Sphere3d)
+import Vector3d
 import Viewpoint3d
 
 
@@ -55,26 +55,58 @@ positionSpec =
     }
 
 
-goalSpec : Ecs.Component.Spec Hex { world | goalComp : Ecs.Component Hex }
-goalSpec =
-    { get = .goalComp
-    , set = \comp world -> { world | goalComp = comp }
+
+-- goalSpec : Ecs.Component.Spec Hex { world | goalComp : Ecs.Component Hex }
+-- goalSpec =
+--     { get = .goalComp
+--     , set = \comp world -> { world | goalComp = comp }
+--     }
+
+
+aiSpec : Ecs.Component.Spec AI { world | aiComp : Ecs.Component AI }
+aiSpec =
+    { get = .aiComp
+    , set = \comp world -> { world | aiComp = comp }
     }
+
+
+type AI
+    = BeeAI
+
+
+graphicsSpec : Ecs.Component.Spec Graphics { world | graphicsComp : Ecs.Component Graphics }
+graphicsSpec =
+    { get = .graphicsComp
+    , set = \comp world -> { world | graphicsComp = comp }
+    }
+
+
+type Graphics
+    = BeeG Color (Sphere3d Meters WorldSpace)
+    | FlowerG Color (Cylinder3d Meters WorldSpace)
 
 
 type alias World =
     { ecsConfig : Ecs.Config
     , seed : Seed
+    , time : Float
     , board : Hexagons.Map.Map
     , positionComp : Ecs.Component Hex
     , goalComp : Ecs.Component Hex
+    , aiComp : Ecs.Component AI
+    , graphicsComp : Ecs.Component Graphics
     }
+
+
+type WorldSpace
+    = WorldSpace Never
 
 
 init : () -> ( World, Cmd Msg )
 init () =
     ( { ecsConfig = Ecs.Config.init
       , seed = Random.initialSeed 0
+      , time = 0
       , board =
             (hexOrigin
                 :: Hexagons.Layout.drawCircle hexOrigin 1
@@ -85,15 +117,48 @@ init () =
                 |> Dict.fromList
       , positionComp = Ecs.Component.empty
       , goalComp = Ecs.Component.empty
+      , aiComp = Ecs.Component.empty
+      , graphicsComp = Ecs.Component.empty
       }
-        |> Ecs.Entity.create ecsConfigSpec
-        |> Ecs.Entity.with ( positionSpec, hexOrigin )
-        |> Tuple.second
-        |> Ecs.Entity.create ecsConfigSpec
-        |> Ecs.Entity.with ( positionSpec, hexOrigin )
-        |> Tuple.second
+        |> createBeeAt hexOrigin
+        |> createBeeAt hexOrigin
+        |> createFlowerAt hexOrigin Color.red
     , Cmd.none
     )
+
+
+createBeeAt : Hex -> World -> World
+createBeeAt startPos world =
+    world
+        |> Ecs.Entity.create ecsConfigSpec
+        |> Ecs.Entity.with ( positionSpec, startPos )
+        |> Ecs.Entity.with ( aiSpec, BeeAI )
+        |> Ecs.Entity.with
+            ( graphicsSpec
+            , BeeG Color.lightBrown
+                (Sphere3d.atPoint (Point3d.meters 0 0 1)
+                    (Length.meters 0.25)
+                )
+            )
+        |> Tuple.second
+
+
+createFlowerAt : Hex -> Color -> World -> World
+createFlowerAt startPos color world =
+    world
+        |> Ecs.Entity.create ecsConfigSpec
+        |> Ecs.Entity.with ( positionSpec, startPos )
+        |> Ecs.Entity.with
+            ( graphicsSpec
+            , FlowerG color
+                (Cylinder3d.centeredOn (Point3d.meters 0 0 0.5)
+                    Direction3d.positiveZ
+                    { radius = Length.meters 0.5
+                    , length = Length.meters 0.25
+                    }
+                )
+            )
+        |> Tuple.second
 
 
 hexOrigin : Hex
@@ -103,12 +168,12 @@ hexOrigin =
 
 subscriptions : World -> Sub Msg
 subscriptions _ =
-    Browser.Events.onAnimationFrame (\_ -> Tick)
+    Browser.Events.onAnimationFrameDelta Tick
 
 
 type Msg
     = NoOp
-    | Tick
+    | Tick Float
 
 
 update : Msg -> World -> ( World, Cmd Msg )
@@ -117,12 +182,81 @@ update msg world =
         NoOp ->
             ( world, Cmd.none )
 
-        Tick ->
-            ( world
-                |> navigate
-                |> giveGoals
+        Tick deltaMs ->
+            let
+                totalTime =
+                    world.time + deltaMs
+
+                ticksToRun =
+                    floor (totalTime / tickTime)
+
+                remainingTime =
+                    totalTime - toFloat ticksToRun * tickTime
+            in
+            ( runTicks ticksToRun { world | time = remainingTime }
             , Cmd.none
             )
+
+
+runTicks : Int -> World -> World
+runTicks ticksToRun world =
+    if ticksToRun < 1 then
+        world
+
+    else
+        runTicks (ticksToRun - 1)
+            (world
+                |> navigate
+                |> giveGoals
+                |> spawnFlower
+            )
+
+
+tickTime =
+    250
+
+
+spawnFlower : Ecs.System.System World
+spawnFlower world =
+    let
+        flowerCount =
+            Ecs.System.foldl2
+                (\_ graphics total ->
+                    case graphics of
+                        FlowerG _ _ ->
+                            total + 1
+
+                        _ ->
+                            total
+                )
+                world.positionComp
+                world.graphicsComp
+                0
+    in
+    if flowerCount > 10 then
+        world
+
+    else
+        let
+            ( ( pos, color ), seed ) =
+                Random.step
+                    (Random.map2 Tuple.pair
+                        (world.board
+                            |> Dict.values
+                            |> Random.List.choose
+                            |> Random.map Tuple.first
+                        )
+                        (Random.uniform Color.red [ Color.blue ])
+                    )
+                    world.seed
+        in
+        case pos of
+            Just position ->
+                { world | seed = seed }
+                    |> createFlowerAt position color
+
+            Nothing ->
+                { world | seed = seed }
 
 
 navigate : Ecs.System.System World
@@ -139,7 +273,7 @@ navigate world =
                             hexCost
                             (hexNeighbors w.board)
                             (Hexagons.Map.hashHex position)
-                            (Hexagons.Map.hashHex goal |> Debug.log "goal")
+                            (Hexagons.Map.hashHex goal)
                 in
                 case path of
                     Just (next :: _) ->
@@ -207,8 +341,8 @@ giveGoals world =
     let
         needGoals : List Ecs.Entity
         needGoals =
-            Ecs.System.indexedFoldl
-                (\entity _ result ->
+            Ecs.System.indexedFoldl2
+                (\entity _ ai result ->
                     case Ecs.Component.get entity world.goalComp of
                         Nothing ->
                             entity :: result
@@ -217,6 +351,7 @@ giveGoals world =
                             result
                 )
                 world.positionComp
+                world.aiComp
                 []
     in
     needGoals
@@ -260,7 +395,7 @@ view world =
                 Camera3d.perspective
                     { viewpoint =
                         Viewpoint3d.lookAt
-                            { eyePoint = Point3d.meters 5 0 10
+                            { eyePoint = Point3d.meters 2 0 8
                             , focalPoint = Point3d.origin
                             , upDirection = Direction3d.positiveZ
                             }
@@ -269,8 +404,8 @@ view world =
             , clipDepth = Length.meters 0.001
             , background = Scene3d.backgroundColor Color.black
             , entities =
-                Ecs.System.foldl
-                    (\pos bees ->
+                Ecs.System.foldl2
+                    (\pos graphics entities ->
                         let
                             ( x, y ) =
                                 Hexagons.Layout.hexToPoint
@@ -279,15 +414,23 @@ view world =
                                     , origin = ( 0, 0 )
                                     }
                                     pos
+
+                            graphicsEntity =
+                                case graphics of
+                                    BeeG c s ->
+                                        Scene3d.sphereWithShadow
+                                            (Scene3d.Material.matte c)
+                                            (s |> Sphere3d.translateBy (Vector3d.meters x y 0))
+
+                                    FlowerG c s ->
+                                        Scene3d.cylinderWithShadow
+                                            (Scene3d.Material.matte c)
+                                            (s |> Cylinder3d.translateBy (Vector3d.meters x y 0))
                         in
-                        Scene3d.sphereWithShadow
-                            (Scene3d.Material.matte Color.lightBrown)
-                            (Sphere3d.atPoint (Point3d.meters x y 1)
-                                (Length.meters 0.25)
-                            )
-                            :: bees
+                        graphicsEntity :: entities
                     )
                     world.positionComp
+                    world.graphicsComp
                     []
                     ++ (world.board
                             |> Dict.values

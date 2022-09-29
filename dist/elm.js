@@ -494,7 +494,7 @@ ${variant}`;
   var VERSION = "1.0.2";
   var TARGET_NAME = "bee simulation";
   var INITIAL_ELM_COMPILED_TIMESTAMP = Number(
-    "1664480057444"
+    "1664487628461"
   );
   var ORIGINAL_COMPILATION_MODE = "standard";
   var WEBSOCKET_PORT = "62600";
@@ -9132,6 +9132,51 @@ var $elm$core$Task$perform = F2(
 				A2($elm$core$Task$map, toMessage, task)));
 	});
 var $elm$browser$Browser$document = _Browser_document;
+var $author$project$Main$BeeAI = {$: 'BeeAI'};
+var $author$project$Main$BeeG = F2(
+	function (a, b) {
+		return {$: 'BeeG', a: a, b: b};
+	});
+var $author$project$Main$aiSpec = {
+	get: function ($) {
+		return $.aiComp;
+	},
+	set: F2(
+		function (comp, world) {
+			return _Utils_update(
+				world,
+				{aiComp: comp});
+		})
+};
+var $ianmackenzie$elm_geometry$Geometry$Types$Sphere3d = function (a) {
+	return {$: 'Sphere3d', a: a};
+};
+var $ianmackenzie$elm_units$Quantity$Quantity = function (a) {
+	return {$: 'Quantity', a: a};
+};
+var $elm$core$Basics$negate = function (n) {
+	return -n;
+};
+var $elm$core$Basics$abs = function (n) {
+	return (n < 0) ? (-n) : n;
+};
+var $ianmackenzie$elm_units$Quantity$abs = function (_v0) {
+	var value = _v0.a;
+	return $ianmackenzie$elm_units$Quantity$Quantity(
+		$elm$core$Basics$abs(value));
+};
+var $ianmackenzie$elm_geometry$Sphere3d$withRadius = F2(
+	function (givenRadius, givenCenterPoint) {
+		return $ianmackenzie$elm_geometry$Geometry$Types$Sphere3d(
+			{
+				centerPoint: givenCenterPoint,
+				radius: $ianmackenzie$elm_units$Quantity$abs(givenRadius)
+			});
+	});
+var $ianmackenzie$elm_geometry$Sphere3d$atPoint = F2(
+	function (givenCenterPoint, givenRadius) {
+		return A2($ianmackenzie$elm_geometry$Sphere3d$withRadius, givenRadius, givenCenterPoint);
+	});
 var $author$project$Ecs$Internal$Config = function (a) {
 	return {$: 'Config', a: a};
 };
@@ -9165,14 +9210,273 @@ var $author$project$Ecs$Entity$create = F2(
 					world));
 		}
 	});
+var $author$project$Main$ecsConfigSpec = {
+	get: function ($) {
+		return $.ecsConfig;
+	},
+	set: F2(
+		function (config, world) {
+			return _Utils_update(
+				world,
+				{ecsConfig: config});
+		})
+};
+var $author$project$Main$graphicsSpec = {
+	get: function ($) {
+		return $.graphicsComp;
+	},
+	set: F2(
+		function (comp, world) {
+			return _Utils_update(
+				world,
+				{graphicsComp: comp});
+		})
+};
+var $avh4$elm_color$Color$RgbaSpace = F4(
+	function (a, b, c, d) {
+		return {$: 'RgbaSpace', a: a, b: b, c: c, d: d};
+	});
+var $avh4$elm_color$Color$lightBrown = A4($avh4$elm_color$Color$RgbaSpace, 233 / 255, 185 / 255, 110 / 255, 1.0);
+var $ianmackenzie$elm_units$Length$meters = function (numMeters) {
+	return $ianmackenzie$elm_units$Quantity$Quantity(numMeters);
+};
+var $ianmackenzie$elm_geometry$Geometry$Types$Point3d = function (a) {
+	return {$: 'Point3d', a: a};
+};
+var $ianmackenzie$elm_geometry$Point3d$meters = F3(
+	function (x, y, z) {
+		return $ianmackenzie$elm_geometry$Geometry$Types$Point3d(
+			{x: x, y: y, z: z});
+	});
+var $author$project$Main$positionSpec = {
+	get: function ($) {
+		return $.positionComp;
+	},
+	set: F2(
+		function (comp, world) {
+			return _Utils_update(
+				world,
+				{positionComp: comp});
+		})
+};
+var $elm$core$Tuple$second = function (_v0) {
+	var y = _v0.b;
+	return y;
+};
+var $author$project$Ecs$Internal$Component = function (a) {
+	return {$: 'Component', a: a};
+};
+var $elm$core$Dict$Black = {$: 'Black'};
+var $elm$core$Dict$RBNode_elm_builtin = F5(
+	function (a, b, c, d, e) {
+		return {$: 'RBNode_elm_builtin', a: a, b: b, c: c, d: d, e: e};
+	});
+var $elm$core$Dict$RBEmpty_elm_builtin = {$: 'RBEmpty_elm_builtin'};
+var $elm$core$Dict$Red = {$: 'Red'};
+var $elm$core$Dict$balance = F5(
+	function (color, key, value, left, right) {
+		if ((right.$ === 'RBNode_elm_builtin') && (right.a.$ === 'Red')) {
+			var _v1 = right.a;
+			var rK = right.b;
+			var rV = right.c;
+			var rLeft = right.d;
+			var rRight = right.e;
+			if ((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) {
+				var _v3 = left.a;
+				var lK = left.b;
+				var lV = left.c;
+				var lLeft = left.d;
+				var lRight = left.e;
+				return A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					$elm$core$Dict$Red,
+					key,
+					value,
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, lK, lV, lLeft, lRight),
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, rK, rV, rLeft, rRight));
+			} else {
+				return A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					color,
+					rK,
+					rV,
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, key, value, left, rLeft),
+					rRight);
+			}
+		} else {
+			if ((((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) && (left.d.$ === 'RBNode_elm_builtin')) && (left.d.a.$ === 'Red')) {
+				var _v5 = left.a;
+				var lK = left.b;
+				var lV = left.c;
+				var _v6 = left.d;
+				var _v7 = _v6.a;
+				var llK = _v6.b;
+				var llV = _v6.c;
+				var llLeft = _v6.d;
+				var llRight = _v6.e;
+				var lRight = left.e;
+				return A5(
+					$elm$core$Dict$RBNode_elm_builtin,
+					$elm$core$Dict$Red,
+					lK,
+					lV,
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, llK, llV, llLeft, llRight),
+					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, key, value, lRight, right));
+			} else {
+				return A5($elm$core$Dict$RBNode_elm_builtin, color, key, value, left, right);
+			}
+		}
+	});
+var $elm$core$Basics$compare = _Utils_compare;
+var $elm$core$Dict$insertHelp = F3(
+	function (key, value, dict) {
+		if (dict.$ === 'RBEmpty_elm_builtin') {
+			return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, key, value, $elm$core$Dict$RBEmpty_elm_builtin, $elm$core$Dict$RBEmpty_elm_builtin);
+		} else {
+			var nColor = dict.a;
+			var nKey = dict.b;
+			var nValue = dict.c;
+			var nLeft = dict.d;
+			var nRight = dict.e;
+			var _v1 = A2($elm$core$Basics$compare, key, nKey);
+			switch (_v1.$) {
+				case 'LT':
+					return A5(
+						$elm$core$Dict$balance,
+						nColor,
+						nKey,
+						nValue,
+						A3($elm$core$Dict$insertHelp, key, value, nLeft),
+						nRight);
+				case 'EQ':
+					return A5($elm$core$Dict$RBNode_elm_builtin, nColor, nKey, value, nLeft, nRight);
+				default:
+					return A5(
+						$elm$core$Dict$balance,
+						nColor,
+						nKey,
+						nValue,
+						nLeft,
+						A3($elm$core$Dict$insertHelp, key, value, nRight));
+			}
+		}
+	});
+var $elm$core$Dict$insert = F3(
+	function (key, value, dict) {
+		var _v0 = A3($elm$core$Dict$insertHelp, key, value, dict);
+		if ((_v0.$ === 'RBNode_elm_builtin') && (_v0.a.$ === 'Red')) {
+			var _v1 = _v0.a;
+			var k = _v0.b;
+			var v = _v0.c;
+			var l = _v0.d;
+			var r = _v0.e;
+			return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, k, v, l, r);
+		} else {
+			var x = _v0;
+			return x;
+		}
+	});
+var $author$project$Ecs$Component$set = F3(
+	function (_v0, value, _v1) {
+		var id = _v0.a;
+		var components = _v1.a;
+		return $author$project$Ecs$Internal$Component(
+			A3($elm$core$Dict$insert, id, value, components));
+	});
+var $author$project$Ecs$Entity$with = F2(
+	function (_v0, _v1) {
+		var spec = _v0.a;
+		var component = _v0.b;
+		var id = _v1.a;
+		var world = _v1.b;
+		var updatedComponents = A3(
+			$author$project$Ecs$Component$set,
+			id,
+			component,
+			spec.get(world));
+		var updatedWorld = A2(spec.set, updatedComponents, world);
+		return _Utils_Tuple2(id, updatedWorld);
+	});
+var $author$project$Main$createBeeAt = F2(
+	function (startPos, world) {
+		return A2(
+			$author$project$Ecs$Entity$with,
+			_Utils_Tuple2(
+				$author$project$Main$graphicsSpec,
+				A2(
+					$author$project$Main$BeeG,
+					$avh4$elm_color$Color$lightBrown,
+					A2(
+						$ianmackenzie$elm_geometry$Sphere3d$atPoint,
+						A3($ianmackenzie$elm_geometry$Point3d$meters, 0, 0, 1),
+						$ianmackenzie$elm_units$Length$meters(0.25)))),
+			A2(
+				$author$project$Ecs$Entity$with,
+				_Utils_Tuple2($author$project$Main$aiSpec, $author$project$Main$BeeAI),
+				A2(
+					$author$project$Ecs$Entity$with,
+					_Utils_Tuple2($author$project$Main$positionSpec, startPos),
+					A2($author$project$Ecs$Entity$create, $author$project$Main$ecsConfigSpec, world)))).b;
+	});
+var $author$project$Main$FlowerG = F2(
+	function (a, b) {
+		return {$: 'FlowerG', a: a, b: b};
+	});
+var $ianmackenzie$elm_geometry$Geometry$Types$Cylinder3d = function (a) {
+	return {$: 'Cylinder3d', a: a};
+};
+var $ianmackenzie$elm_geometry$Geometry$Types$Axis3d = function (a) {
+	return {$: 'Axis3d', a: a};
+};
+var $ianmackenzie$elm_geometry$Axis3d$through = F2(
+	function (givenPoint, givenDirection) {
+		return $ianmackenzie$elm_geometry$Geometry$Types$Axis3d(
+			{direction: givenDirection, originPoint: givenPoint});
+	});
+var $ianmackenzie$elm_geometry$Cylinder3d$centeredOn = F3(
+	function (givenCenterPoint, givenDirection, _arguments) {
+		return $ianmackenzie$elm_geometry$Geometry$Types$Cylinder3d(
+			{
+				axis: A2($ianmackenzie$elm_geometry$Axis3d$through, givenCenterPoint, givenDirection),
+				length: $ianmackenzie$elm_units$Quantity$abs(_arguments.length),
+				radius: $ianmackenzie$elm_units$Quantity$abs(_arguments.radius)
+			});
+	});
+var $ianmackenzie$elm_geometry$Geometry$Types$Direction3d = function (a) {
+	return {$: 'Direction3d', a: a};
+};
+var $ianmackenzie$elm_geometry$Direction3d$unsafe = function (givenComponents) {
+	return $ianmackenzie$elm_geometry$Geometry$Types$Direction3d(givenComponents);
+};
+var $ianmackenzie$elm_geometry$Direction3d$positiveZ = $ianmackenzie$elm_geometry$Direction3d$unsafe(
+	{x: 0, y: 0, z: 1});
+var $author$project$Main$createFlowerAt = F3(
+	function (startPos, color, world) {
+		return A2(
+			$author$project$Ecs$Entity$with,
+			_Utils_Tuple2(
+				$author$project$Main$graphicsSpec,
+				A2(
+					$author$project$Main$FlowerG,
+					color,
+					A3(
+						$ianmackenzie$elm_geometry$Cylinder3d$centeredOn,
+						A3($ianmackenzie$elm_geometry$Point3d$meters, 0, 0, 0.5),
+						$ianmackenzie$elm_geometry$Direction3d$positiveZ,
+						{
+							length: $ianmackenzie$elm_units$Length$meters(0.25),
+							radius: $ianmackenzie$elm_units$Length$meters(0.5)
+						}))),
+			A2(
+				$author$project$Ecs$Entity$with,
+				_Utils_Tuple2($author$project$Main$positionSpec, startPos),
+				A2($author$project$Ecs$Entity$create, $author$project$Main$ecsConfigSpec, world))).b;
+	});
 var $Voronchuk$hexagons$Hexagons$Hex$FloatCubeHex = function (a) {
 	return {$: 'FloatCubeHex', a: a};
 };
 var $Voronchuk$hexagons$Hexagons$Hex$IntCubeHex = function (a) {
 	return {$: 'IntCubeHex', a: a};
-};
-var $elm$core$Basics$negate = function (n) {
-	return -n;
 };
 var $Voronchuk$hexagons$Hexagons$Hex$add = F2(
 	function (a, b) {
@@ -9360,132 +9664,8 @@ var $Voronchuk$hexagons$Hexagons$Layout$drawCircle = F2(
 				calcRow,
 				A2($elm$core$List$range, -radius, radius)));
 	});
-var $author$project$Main$ecsConfigSpec = {
-	get: function ($) {
-		return $.ecsConfig;
-	},
-	set: F2(
-		function (config, world) {
-			return _Utils_update(
-				world,
-				{ecsConfig: config});
-		})
-};
-var $author$project$Ecs$Internal$Component = function (a) {
-	return {$: 'Component', a: a};
-};
-var $elm$core$Dict$RBEmpty_elm_builtin = {$: 'RBEmpty_elm_builtin'};
 var $elm$core$Dict$empty = $elm$core$Dict$RBEmpty_elm_builtin;
 var $author$project$Ecs$Component$empty = $author$project$Ecs$Internal$Component($elm$core$Dict$empty);
-var $elm$core$Dict$Black = {$: 'Black'};
-var $elm$core$Dict$RBNode_elm_builtin = F5(
-	function (a, b, c, d, e) {
-		return {$: 'RBNode_elm_builtin', a: a, b: b, c: c, d: d, e: e};
-	});
-var $elm$core$Dict$Red = {$: 'Red'};
-var $elm$core$Dict$balance = F5(
-	function (color, key, value, left, right) {
-		if ((right.$ === 'RBNode_elm_builtin') && (right.a.$ === 'Red')) {
-			var _v1 = right.a;
-			var rK = right.b;
-			var rV = right.c;
-			var rLeft = right.d;
-			var rRight = right.e;
-			if ((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) {
-				var _v3 = left.a;
-				var lK = left.b;
-				var lV = left.c;
-				var lLeft = left.d;
-				var lRight = left.e;
-				return A5(
-					$elm$core$Dict$RBNode_elm_builtin,
-					$elm$core$Dict$Red,
-					key,
-					value,
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, lK, lV, lLeft, lRight),
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, rK, rV, rLeft, rRight));
-			} else {
-				return A5(
-					$elm$core$Dict$RBNode_elm_builtin,
-					color,
-					rK,
-					rV,
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, key, value, left, rLeft),
-					rRight);
-			}
-		} else {
-			if ((((left.$ === 'RBNode_elm_builtin') && (left.a.$ === 'Red')) && (left.d.$ === 'RBNode_elm_builtin')) && (left.d.a.$ === 'Red')) {
-				var _v5 = left.a;
-				var lK = left.b;
-				var lV = left.c;
-				var _v6 = left.d;
-				var _v7 = _v6.a;
-				var llK = _v6.b;
-				var llV = _v6.c;
-				var llLeft = _v6.d;
-				var llRight = _v6.e;
-				var lRight = left.e;
-				return A5(
-					$elm$core$Dict$RBNode_elm_builtin,
-					$elm$core$Dict$Red,
-					lK,
-					lV,
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, llK, llV, llLeft, llRight),
-					A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, key, value, lRight, right));
-			} else {
-				return A5($elm$core$Dict$RBNode_elm_builtin, color, key, value, left, right);
-			}
-		}
-	});
-var $elm$core$Basics$compare = _Utils_compare;
-var $elm$core$Dict$insertHelp = F3(
-	function (key, value, dict) {
-		if (dict.$ === 'RBEmpty_elm_builtin') {
-			return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Red, key, value, $elm$core$Dict$RBEmpty_elm_builtin, $elm$core$Dict$RBEmpty_elm_builtin);
-		} else {
-			var nColor = dict.a;
-			var nKey = dict.b;
-			var nValue = dict.c;
-			var nLeft = dict.d;
-			var nRight = dict.e;
-			var _v1 = A2($elm$core$Basics$compare, key, nKey);
-			switch (_v1.$) {
-				case 'LT':
-					return A5(
-						$elm$core$Dict$balance,
-						nColor,
-						nKey,
-						nValue,
-						A3($elm$core$Dict$insertHelp, key, value, nLeft),
-						nRight);
-				case 'EQ':
-					return A5($elm$core$Dict$RBNode_elm_builtin, nColor, nKey, value, nLeft, nRight);
-				default:
-					return A5(
-						$elm$core$Dict$balance,
-						nColor,
-						nKey,
-						nValue,
-						nLeft,
-						A3($elm$core$Dict$insertHelp, key, value, nRight));
-			}
-		}
-	});
-var $elm$core$Dict$insert = F3(
-	function (key, value, dict) {
-		var _v0 = A3($elm$core$Dict$insertHelp, key, value, dict);
-		if ((_v0.$ === 'RBNode_elm_builtin') && (_v0.a.$ === 'Red')) {
-			var _v1 = _v0.a;
-			var k = _v0.b;
-			var v = _v0.c;
-			var l = _v0.d;
-			var r = _v0.e;
-			return A5($elm$core$Dict$RBNode_elm_builtin, $elm$core$Dict$Black, k, v, l, r);
-		} else {
-			var x = _v0;
-			return x;
-		}
-	});
 var $elm$core$Dict$fromList = function (assocs) {
 	return A3(
 		$elm$core$List$foldl,
@@ -9518,9 +9698,6 @@ var $Voronchuk$hexagons$Hexagons$Hex$intS = function (a) {
 			var a3 = _v3.c;
 			return $elm$core$Basics$floor(a3);
 	}
-};
-var $elm$core$Basics$abs = function (n) {
-	return (n < 0) ? (-n) : n;
 };
 var $elm$core$Basics$round = _Basics_round;
 var $Voronchuk$hexagons$Hexagons$Hex$toIntHex = function (hex) {
@@ -9586,83 +9763,51 @@ var $elm$random$Random$initialSeed = function (x) {
 };
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
-var $author$project$Main$positionSpec = {
-	get: function ($) {
-		return $.positionComp;
-	},
-	set: F2(
-		function (comp, world) {
-			return _Utils_update(
-				world,
-				{positionComp: comp});
-		})
-};
-var $elm$core$Tuple$second = function (_v0) {
-	var y = _v0.b;
-	return y;
-};
-var $author$project$Ecs$Component$set = F3(
-	function (_v0, value, _v1) {
-		var id = _v0.a;
-		var components = _v1.a;
-		return $author$project$Ecs$Internal$Component(
-			A3($elm$core$Dict$insert, id, value, components));
-	});
-var $author$project$Ecs$Entity$with = F2(
-	function (_v0, _v1) {
-		var spec = _v0.a;
-		var component = _v0.b;
-		var id = _v1.a;
-		var world = _v1.b;
-		var updatedComponents = A3(
-			$author$project$Ecs$Component$set,
-			id,
-			component,
-			spec.get(world));
-		var updatedWorld = A2(spec.set, updatedComponents, world);
-		return _Utils_Tuple2(id, updatedWorld);
-	});
+var $avh4$elm_color$Color$red = A4($avh4$elm_color$Color$RgbaSpace, 204 / 255, 0 / 255, 0 / 255, 1.0);
 var $author$project$Main$init = function (_v0) {
 	return _Utils_Tuple2(
-		A2(
-			$author$project$Ecs$Entity$with,
-			_Utils_Tuple2($author$project$Main$positionSpec, $author$project$Main$hexOrigin),
+		A3(
+			$author$project$Main$createFlowerAt,
+			$author$project$Main$hexOrigin,
+			$avh4$elm_color$Color$red,
 			A2(
-				$author$project$Ecs$Entity$create,
-				$author$project$Main$ecsConfigSpec,
+				$author$project$Main$createBeeAt,
+				$author$project$Main$hexOrigin,
 				A2(
-					$author$project$Ecs$Entity$with,
-					_Utils_Tuple2($author$project$Main$positionSpec, $author$project$Main$hexOrigin),
-					A2(
-						$author$project$Ecs$Entity$create,
-						$author$project$Main$ecsConfigSpec,
-						{
-							board: $elm$core$Dict$fromList(
+					$author$project$Main$createBeeAt,
+					$author$project$Main$hexOrigin,
+					{
+						aiComp: $author$project$Ecs$Component$empty,
+						board: $elm$core$Dict$fromList(
+							A2(
+								$elm$core$List$map,
+								function (hex) {
+									return _Utils_Tuple2(
+										$Voronchuk$hexagons$Hexagons$Map$hashHex(hex),
+										hex);
+								},
 								A2(
-									$elm$core$List$map,
-									function (hex) {
-										return _Utils_Tuple2(
-											$Voronchuk$hexagons$Hexagons$Map$hashHex(hex),
-											hex);
-									},
-									A2(
-										$elm$core$List$cons,
-										$author$project$Main$hexOrigin,
+									$elm$core$List$cons,
+									$author$project$Main$hexOrigin,
+									_Utils_ap(
+										A2($Voronchuk$hexagons$Hexagons$Layout$drawCircle, $author$project$Main$hexOrigin, 1),
 										_Utils_ap(
-											A2($Voronchuk$hexagons$Hexagons$Layout$drawCircle, $author$project$Main$hexOrigin, 1),
-											_Utils_ap(
-												A2($Voronchuk$hexagons$Hexagons$Layout$drawCircle, $author$project$Main$hexOrigin, 2),
-												A2($Voronchuk$hexagons$Hexagons$Layout$drawCircle, $author$project$Main$hexOrigin, 3)))))),
-							ecsConfig: $author$project$Ecs$Config$init,
-							goalComp: $author$project$Ecs$Component$empty,
-							positionComp: $author$project$Ecs$Component$empty,
-							seed: $elm$random$Random$initialSeed(0)
-						})).b)).b,
+											A2($Voronchuk$hexagons$Hexagons$Layout$drawCircle, $author$project$Main$hexOrigin, 2),
+											A2($Voronchuk$hexagons$Hexagons$Layout$drawCircle, $author$project$Main$hexOrigin, 3)))))),
+						ecsConfig: $author$project$Ecs$Config$init,
+						goalComp: $author$project$Ecs$Component$empty,
+						graphicsComp: $author$project$Ecs$Component$empty,
+						positionComp: $author$project$Ecs$Component$empty,
+						seed: $elm$random$Random$initialSeed(0),
+						time: 0
+					}))),
 		$elm$core$Platform$Cmd$none);
 };
-var $author$project$Main$Tick = {$: 'Tick'};
-var $elm$browser$Browser$AnimationManager$Time = function (a) {
-	return {$: 'Time', a: a};
+var $author$project$Main$Tick = function (a) {
+	return {$: 'Tick', a: a};
+};
+var $elm$browser$Browser$AnimationManager$Delta = function (a) {
+	return {$: 'Delta', a: a};
 };
 var $elm$browser$Browser$AnimationManager$State = F3(
 	function (subs, request, oldTime) {
@@ -9768,8 +9913,8 @@ var $elm$browser$Browser$AnimationManager$onSelfMsg = F3(
 					$elm$core$Platform$sendToSelf(router),
 					$elm$browser$Browser$AnimationManager$rAF)));
 	});
-var $elm$browser$Browser$AnimationManager$Delta = function (a) {
-	return {$: 'Delta', a: a};
+var $elm$browser$Browser$AnimationManager$Time = function (a) {
+	return {$: 'Time', a: a};
 };
 var $elm$core$Basics$composeL = F3(
 	function (g, f, x) {
@@ -9790,16 +9935,13 @@ var $elm$browser$Browser$AnimationManager$subMap = F2(
 	});
 _Platform_effectManagers['Browser.AnimationManager'] = _Platform_createManager($elm$browser$Browser$AnimationManager$init, $elm$browser$Browser$AnimationManager$onEffects, $elm$browser$Browser$AnimationManager$onSelfMsg, 0, $elm$browser$Browser$AnimationManager$subMap);
 var $elm$browser$Browser$AnimationManager$subscription = _Platform_leaf('Browser.AnimationManager');
-var $elm$browser$Browser$AnimationManager$onAnimationFrame = function (tagger) {
+var $elm$browser$Browser$AnimationManager$onAnimationFrameDelta = function (tagger) {
 	return $elm$browser$Browser$AnimationManager$subscription(
-		$elm$browser$Browser$AnimationManager$Time(tagger));
+		$elm$browser$Browser$AnimationManager$Delta(tagger));
 };
-var $elm$browser$Browser$Events$onAnimationFrame = $elm$browser$Browser$AnimationManager$onAnimationFrame;
+var $elm$browser$Browser$Events$onAnimationFrameDelta = $elm$browser$Browser$AnimationManager$onAnimationFrameDelta;
 var $author$project$Main$subscriptions = function (_v0) {
-	return $elm$browser$Browser$Events$onAnimationFrame(
-		function (_v1) {
-			return $author$project$Main$Tick;
-		});
+	return $elm$browser$Browser$Events$onAnimationFrameDelta($author$project$Main$Tick);
 };
 var $elm$random$Random$Generator = function (a) {
 	return {$: 'Generator', a: a};
@@ -10134,6 +10276,44 @@ var $author$project$Ecs$System$indexedFoldl = F3(
 			acc_,
 			comp);
 	});
+var $elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return $elm$core$Maybe$Just(
+				f(value));
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $elm$core$Maybe$withDefault = F2(
+	function (_default, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return value;
+		} else {
+			return _default;
+		}
+	});
+var $author$project$Ecs$System$indexedFoldl2 = F4(
+	function (f, comp1, comp2, acc_) {
+		return A3(
+			$author$project$Ecs$System$indexedFoldl,
+			F3(
+				function (entity, a, acc) {
+					return A2(
+						$elm$core$Maybe$withDefault,
+						acc,
+						A2(
+							$elm$core$Maybe$map,
+							function (b) {
+								return A4(f, entity, a, b, acc);
+							},
+							A2($author$project$Ecs$Component$get, entity, comp2)));
+				}),
+			comp1,
+			acc_);
+	});
 var $elm$random$Random$step = F2(
 	function (_v0, seed) {
 		var generator = _v0.a;
@@ -10150,10 +10330,10 @@ var $elm$core$Dict$values = function (dict) {
 		dict);
 };
 var $author$project$Main$giveGoals = function (world) {
-	var needGoals = A3(
-		$author$project$Ecs$System$indexedFoldl,
-		F3(
-			function (entity, _v2, result) {
+	var needGoals = A4(
+		$author$project$Ecs$System$indexedFoldl2,
+		F4(
+			function (entity, _v2, ai, result) {
 				var _v3 = A2($author$project$Ecs$Component$get, entity, world.goalComp);
 				if (_v3.$ === 'Nothing') {
 					return A2($elm$core$List$cons, entity, result);
@@ -10162,6 +10342,7 @@ var $author$project$Main$giveGoals = function (world) {
 				}
 			}),
 		world.positionComp,
+		world.aiComp,
 		_List_Nil);
 	return A3(
 		$elm$core$List$foldl,
@@ -10211,16 +10392,6 @@ var $elm$core$List$filterMap = F2(
 			$elm$core$List$maybeCons(f),
 			_List_Nil,
 			xs);
-	});
-var $elm$core$Maybe$map = F2(
-	function (f, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return $elm$core$Maybe$Just(
-				f(value));
-		} else {
-			return $elm$core$Maybe$Nothing;
-		}
 	});
 var $elm$core$List$sortBy = _List_sortBy;
 var $krisajenkins$elm_astar$AStar$Generalised$cheapestOpen = F2(
@@ -11093,35 +11264,6 @@ var $author$project$Main$hexNeighbors = F2(
 				_List_fromArray(
 					[$Voronchuk$hexagons$Hexagons$Hex$NE, $Voronchuk$hexagons$Hexagons$Hex$E, $Voronchuk$hexagons$Hexagons$Hex$SE, $Voronchuk$hexagons$Hexagons$Hex$SW, $Voronchuk$hexagons$Hexagons$Hex$W, $Voronchuk$hexagons$Hexagons$Hex$NW])));
 	});
-var $elm$core$Maybe$withDefault = F2(
-	function (_default, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return value;
-		} else {
-			return _default;
-		}
-	});
-var $author$project$Ecs$System$indexedFoldl2 = F4(
-	function (f, comp1, comp2, acc_) {
-		return A3(
-			$author$project$Ecs$System$indexedFoldl,
-			F3(
-				function (entity, a, acc) {
-					return A2(
-						$elm$core$Maybe$withDefault,
-						acc,
-						A2(
-							$elm$core$Maybe$map,
-							function (b) {
-								return A4(f, entity, a, b, acc);
-							},
-							A2($author$project$Ecs$Component$get, entity, comp2)));
-				}),
-			comp1,
-			acc_);
-	});
-var $elm$core$Debug$log = _Debug_log;
 var $author$project$Ecs$Component$remove = F2(
 	function (_v0, _v1) {
 		var id = _v0.a;
@@ -11146,10 +11288,7 @@ var $author$project$Main$navigate = function (world) {
 						$author$project$Main$hexCost,
 						$author$project$Main$hexNeighbors(w.board),
 						$Voronchuk$hexagons$Hexagons$Map$hashHex(position),
-						A2(
-							$elm$core$Debug$log,
-							'goal',
-							$Voronchuk$hexagons$Hexagons$Map$hashHex(goal)));
+						$Voronchuk$hexagons$Hexagons$Map$hashHex(goal));
 					if ((path.$ === 'Just') && path.a.b) {
 						var _v1 = path.a;
 						var next = _v1.a;
@@ -11172,39 +11311,206 @@ var $author$project$Main$navigate = function (world) {
 		world.goalComp,
 		world);
 };
+var $avh4$elm_color$Color$blue = A4($avh4$elm_color$Color$RgbaSpace, 52 / 255, 101 / 255, 164 / 255, 1.0);
+var $author$project$Ecs$System$foldl2 = F4(
+	function (f, comp1, comp2, acc_) {
+		return A3(
+			$author$project$Ecs$System$indexedFoldl,
+			F3(
+				function (entity, a, acc) {
+					return A2(
+						$elm$core$Maybe$withDefault,
+						acc,
+						A2(
+							$elm$core$Maybe$map,
+							function (b) {
+								return A3(f, a, b, acc);
+							},
+							A2($author$project$Ecs$Component$get, entity, comp2)));
+				}),
+			comp1,
+			acc_);
+	});
+var $elm$random$Random$map2 = F3(
+	function (func, _v0, _v1) {
+		var genA = _v0.a;
+		var genB = _v1.a;
+		return $elm$random$Random$Generator(
+			function (seed0) {
+				var _v2 = genA(seed0);
+				var a = _v2.a;
+				var seed1 = _v2.b;
+				var _v3 = genB(seed1);
+				var b = _v3.a;
+				var seed2 = _v3.b;
+				return _Utils_Tuple2(
+					A2(func, a, b),
+					seed2);
+			});
+	});
+var $elm$core$Tuple$pair = F2(
+	function (a, b) {
+		return _Utils_Tuple2(a, b);
+	});
+var $elm$random$Random$addOne = function (value) {
+	return _Utils_Tuple2(1, value);
+};
+var $elm$random$Random$float = F2(
+	function (a, b) {
+		return $elm$random$Random$Generator(
+			function (seed0) {
+				var seed1 = $elm$random$Random$next(seed0);
+				var range = $elm$core$Basics$abs(b - a);
+				var n1 = $elm$random$Random$peel(seed1);
+				var n0 = $elm$random$Random$peel(seed0);
+				var lo = (134217727 & n1) * 1.0;
+				var hi = (67108863 & n0) * 1.0;
+				var val = ((hi * 134217728.0) + lo) / 9007199254740992.0;
+				var scaled = (val * range) + a;
+				return _Utils_Tuple2(
+					scaled,
+					$elm$random$Random$next(seed1));
+			});
+	});
+var $elm$random$Random$getByWeight = F3(
+	function (_v0, others, countdown) {
+		getByWeight:
+		while (true) {
+			var weight = _v0.a;
+			var value = _v0.b;
+			if (!others.b) {
+				return value;
+			} else {
+				var second = others.a;
+				var otherOthers = others.b;
+				if (_Utils_cmp(
+					countdown,
+					$elm$core$Basics$abs(weight)) < 1) {
+					return value;
+				} else {
+					var $temp$_v0 = second,
+						$temp$others = otherOthers,
+						$temp$countdown = countdown - $elm$core$Basics$abs(weight);
+					_v0 = $temp$_v0;
+					others = $temp$others;
+					countdown = $temp$countdown;
+					continue getByWeight;
+				}
+			}
+		}
+	});
+var $elm$core$List$sum = function (numbers) {
+	return A3($elm$core$List$foldl, $elm$core$Basics$add, 0, numbers);
+};
+var $elm$random$Random$weighted = F2(
+	function (first, others) {
+		var normalize = function (_v0) {
+			var weight = _v0.a;
+			return $elm$core$Basics$abs(weight);
+		};
+		var total = normalize(first) + $elm$core$List$sum(
+			A2($elm$core$List$map, normalize, others));
+		return A2(
+			$elm$random$Random$map,
+			A2($elm$random$Random$getByWeight, first, others),
+			A2($elm$random$Random$float, 0, total));
+	});
+var $elm$random$Random$uniform = F2(
+	function (value, valueList) {
+		return A2(
+			$elm$random$Random$weighted,
+			$elm$random$Random$addOne(value),
+			A2($elm$core$List$map, $elm$random$Random$addOne, valueList));
+	});
+var $author$project$Main$spawnFlower = function (world) {
+	var flowerCount = A4(
+		$author$project$Ecs$System$foldl2,
+		F3(
+			function (_v3, graphics, total) {
+				if (graphics.$ === 'FlowerG') {
+					return total + 1;
+				} else {
+					return total;
+				}
+			}),
+		world.positionComp,
+		world.graphicsComp,
+		0);
+	if (flowerCount > 10) {
+		return world;
+	} else {
+		var _v0 = A2(
+			$elm$random$Random$step,
+			A3(
+				$elm$random$Random$map2,
+				$elm$core$Tuple$pair,
+				A2(
+					$elm$random$Random$map,
+					$elm$core$Tuple$first,
+					$elm_community$random_extra$Random$List$choose(
+						$elm$core$Dict$values(world.board))),
+				A2(
+					$elm$random$Random$uniform,
+					$avh4$elm_color$Color$red,
+					_List_fromArray(
+						[$avh4$elm_color$Color$blue]))),
+			world.seed);
+		var _v1 = _v0.a;
+		var pos = _v1.a;
+		var color = _v1.b;
+		var seed = _v0.b;
+		if (pos.$ === 'Just') {
+			var position = pos.a;
+			return A3(
+				$author$project$Main$createFlowerAt,
+				position,
+				color,
+				_Utils_update(
+					world,
+					{seed: seed}));
+		} else {
+			return _Utils_update(
+				world,
+				{seed: seed});
+		}
+	}
+};
+var $author$project$Main$runTicks = F2(
+	function (ticksToRun, world) {
+		runTicks:
+		while (true) {
+			if (ticksToRun < 1) {
+				return world;
+			} else {
+				var $temp$ticksToRun = ticksToRun - 1,
+					$temp$world = $author$project$Main$spawnFlower(
+					$author$project$Main$giveGoals(
+						$author$project$Main$navigate(world)));
+				ticksToRun = $temp$ticksToRun;
+				world = $temp$world;
+				continue runTicks;
+			}
+		}
+	});
+var $author$project$Main$tickTime = 250;
 var $author$project$Main$update = F2(
 	function (msg, world) {
 		if (msg.$ === 'NoOp') {
 			return _Utils_Tuple2(world, $elm$core$Platform$Cmd$none);
 		} else {
+			var deltaMs = msg.a;
+			var totalTime = world.time + deltaMs;
+			var ticksToRun = $elm$core$Basics$floor(totalTime / $author$project$Main$tickTime);
+			var remainingTime = totalTime - (ticksToRun * $author$project$Main$tickTime);
 			return _Utils_Tuple2(
-				$author$project$Main$giveGoals(
-					$author$project$Main$navigate(world)),
+				A2(
+					$author$project$Main$runTicks,
+					ticksToRun,
+					_Utils_update(
+						world,
+						{time: remainingTime})),
 				$elm$core$Platform$Cmd$none);
 		}
-	});
-var $ianmackenzie$elm_geometry$Geometry$Types$Sphere3d = function (a) {
-	return {$: 'Sphere3d', a: a};
-};
-var $ianmackenzie$elm_units$Quantity$Quantity = function (a) {
-	return {$: 'Quantity', a: a};
-};
-var $ianmackenzie$elm_units$Quantity$abs = function (_v0) {
-	var value = _v0.a;
-	return $ianmackenzie$elm_units$Quantity$Quantity(
-		$elm$core$Basics$abs(value));
-};
-var $ianmackenzie$elm_geometry$Sphere3d$withRadius = F2(
-	function (givenRadius, givenCenterPoint) {
-		return $ianmackenzie$elm_geometry$Geometry$Types$Sphere3d(
-			{
-				centerPoint: givenCenterPoint,
-				radius: $ianmackenzie$elm_units$Quantity$abs(givenRadius)
-			});
-	});
-var $ianmackenzie$elm_geometry$Sphere3d$atPoint = F2(
-	function (givenCenterPoint, givenRadius) {
-		return A2($ianmackenzie$elm_geometry$Sphere3d$withRadius, givenRadius, givenCenterPoint);
 	});
 var $ianmackenzie$elm_3d_scene$Scene3d$BackgroundColor = function (a) {
 	return {$: 'BackgroundColor', a: a};
@@ -11212,31 +11518,7 @@ var $ianmackenzie$elm_3d_scene$Scene3d$BackgroundColor = function (a) {
 var $ianmackenzie$elm_3d_scene$Scene3d$backgroundColor = function (color) {
 	return $ianmackenzie$elm_3d_scene$Scene3d$BackgroundColor(color);
 };
-var $avh4$elm_color$Color$RgbaSpace = F4(
-	function (a, b, c, d) {
-		return {$: 'RgbaSpace', a: a, b: b, c: c, d: d};
-	});
 var $avh4$elm_color$Color$black = A4($avh4$elm_color$Color$RgbaSpace, 0 / 255, 0 / 255, 0 / 255, 1.0);
-var $ianmackenzie$elm_geometry$Geometry$Types$Cylinder3d = function (a) {
-	return {$: 'Cylinder3d', a: a};
-};
-var $ianmackenzie$elm_geometry$Geometry$Types$Axis3d = function (a) {
-	return {$: 'Axis3d', a: a};
-};
-var $ianmackenzie$elm_geometry$Axis3d$through = F2(
-	function (givenPoint, givenDirection) {
-		return $ianmackenzie$elm_geometry$Geometry$Types$Axis3d(
-			{direction: givenDirection, originPoint: givenPoint});
-	});
-var $ianmackenzie$elm_geometry$Cylinder3d$centeredOn = F3(
-	function (givenCenterPoint, givenDirection, _arguments) {
-		return $ianmackenzie$elm_geometry$Geometry$Types$Cylinder3d(
-			{
-				axis: A2($ianmackenzie$elm_geometry$Axis3d$through, givenCenterPoint, givenDirection),
-				length: $ianmackenzie$elm_units$Quantity$abs(_arguments.length),
-				radius: $ianmackenzie$elm_units$Quantity$abs(_arguments.radius)
-			});
-	});
 var $ianmackenzie$elm_geometry$Cylinder3d$axis = function (_v0) {
 	var cylinder = _v0.a;
 	return cylinder.axis;
@@ -11485,21 +11767,12 @@ var $ianmackenzie$elm_3d_scene$Scene3d$Mesh$indexedFaces = function (givenMesh) 
 		return A4($ianmackenzie$elm_3d_scene$Scene3d$Types$MeshWithNormals, bounds, givenMesh, webGLMesh, $ianmackenzie$elm_3d_scene$Scene3d$Types$KeepBackFaces);
 	}
 };
-var $ianmackenzie$elm_units$Length$meters = function (numMeters) {
-	return $ianmackenzie$elm_units$Quantity$Quantity(numMeters);
-};
 var $elm$core$Basics$modBy = _Basics_modBy;
 var $ianmackenzie$elm_units$Quantity$multiplyBy = F2(
 	function (scale, _v0) {
 		var value = _v0.a;
 		return $ianmackenzie$elm_units$Quantity$Quantity(scale * value);
 	});
-var $ianmackenzie$elm_geometry$Geometry$Types$Direction3d = function (a) {
-	return {$: 'Direction3d', a: a};
-};
-var $ianmackenzie$elm_geometry$Direction3d$unsafe = function (givenComponents) {
-	return $ianmackenzie$elm_geometry$Geometry$Types$Direction3d(givenComponents);
-};
 var $ianmackenzie$elm_geometry$Direction3d$negativeZ = $ianmackenzie$elm_geometry$Direction3d$unsafe(
 	{x: 0, y: 0, z: -1});
 var $ianmackenzie$elm_geometry$Direction3d$on = F2(
@@ -11513,8 +11786,6 @@ var $ianmackenzie$elm_geometry$Direction3d$on = F2(
 		return $ianmackenzie$elm_geometry$Geometry$Types$Direction3d(
 			{x: (d.x * i.x) + (d.y * j.x), y: (d.x * i.y) + (d.y * j.y), z: (d.x * i.z) + (d.y * j.z)});
 	});
-var $ianmackenzie$elm_geometry$Direction3d$positiveZ = $ianmackenzie$elm_geometry$Direction3d$unsafe(
-	{x: 0, y: 0, z: 1});
 var $ianmackenzie$elm_units$Angle$sin = function (_v0) {
 	var angle = _v0.a;
 	return $elm$core$Basics$sin(angle);
@@ -11596,9 +11867,6 @@ var $ianmackenzie$elm_units$Angle$radians = function (numRadians) {
 };
 var $ianmackenzie$elm_units$Angle$turns = function (numTurns) {
 	return $ianmackenzie$elm_units$Angle$radians((2 * $elm$core$Basics$pi) * numTurns);
-};
-var $ianmackenzie$elm_geometry$Geometry$Types$Point3d = function (a) {
-	return {$: 'Point3d', a: a};
 };
 var $ianmackenzie$elm_geometry$Point3d$origin = $ianmackenzie$elm_geometry$Geometry$Types$Point3d(
 	{x: 0, y: 0, z: 0});
@@ -13901,18 +14169,6 @@ var $ianmackenzie$elm_3d_scene$Scene3d$cylinderWithShadow = F2(
 var $ianmackenzie$elm_units$Angle$degrees = function (numDegrees) {
 	return $ianmackenzie$elm_units$Angle$radians($elm$core$Basics$pi * (numDegrees / 180));
 };
-var $author$project$Ecs$System$foldl = F3(
-	function (f, _v0, acc_) {
-		var comp = _v0.a;
-		return A3(
-			$elm$core$Dict$foldl,
-			F3(
-				function (_v1, a, acc) {
-					return A2(f, a, acc);
-				}),
-			acc_,
-			comp);
-	});
 var $elm$core$Basics$pow = _Basics_pow;
 var $Voronchuk$hexagons$Hexagons$Layout$precision = F2(
 	function (division, number) {
@@ -13941,7 +14197,6 @@ var $Voronchuk$hexagons$Hexagons$Layout$hexToPoint = F2(
 var $ianmackenzie$elm_units$Pixels$int = function (numPixels) {
 	return $ianmackenzie$elm_units$Quantity$Quantity(numPixels);
 };
-var $avh4$elm_color$Color$lightBrown = A4($avh4$elm_color$Color$RgbaSpace, 233 / 255, 185 / 255, 110 / 255, 1.0);
 var $ianmackenzie$elm_3d_camera$Camera3d$Types$Viewpoint3d = function (a) {
 	return {$: 'Viewpoint3d', a: a};
 };
@@ -14126,9 +14381,9 @@ var $ianmackenzie$elm_3d_scene$Scene3d$Material$matte = function (materialColor)
 			$ianmackenzie$elm_3d_scene$Scene3d$ColorConversions$colorToLinearRgb(materialColor)),
 		$ianmackenzie$elm_3d_scene$Scene3d$Types$Constant($ianmackenzie$elm_3d_scene$Scene3d$Types$VerticalNormal));
 };
-var $ianmackenzie$elm_geometry$Point3d$meters = F3(
+var $ianmackenzie$elm_geometry$Vector3d$meters = F3(
 	function (x, y, z) {
-		return $ianmackenzie$elm_geometry$Geometry$Types$Point3d(
+		return $ianmackenzie$elm_geometry$Geometry$Types$Vector3d(
 			{x: x, y: y, z: z});
 	});
 var $Voronchuk$hexagons$Hexagons$Layout$orientationLayoutPointy = {
@@ -15848,6 +16103,41 @@ var $ianmackenzie$elm_3d_scene$Scene3d$sunny = function (_arguments) {
 };
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
+var $ianmackenzie$elm_geometry$Point3d$translateBy = F2(
+	function (_v0, _v1) {
+		var v = _v0.a;
+		var p = _v1.a;
+		return $ianmackenzie$elm_geometry$Geometry$Types$Point3d(
+			{x: p.x + v.x, y: p.y + v.y, z: p.z + v.z});
+	});
+var $ianmackenzie$elm_geometry$Axis3d$translateBy = F2(
+	function (vector, _v0) {
+		var axis = _v0.a;
+		return A2(
+			$ianmackenzie$elm_geometry$Axis3d$through,
+			A2($ianmackenzie$elm_geometry$Point3d$translateBy, vector, axis.originPoint),
+			axis.direction);
+	});
+var $ianmackenzie$elm_geometry$Cylinder3d$translateBy = F2(
+	function (displacement, _v0) {
+		var cylinder = _v0.a;
+		return $ianmackenzie$elm_geometry$Geometry$Types$Cylinder3d(
+			{
+				axis: A2($ianmackenzie$elm_geometry$Axis3d$translateBy, displacement, cylinder.axis),
+				length: cylinder.length,
+				radius: cylinder.radius
+			});
+	});
+var $ianmackenzie$elm_geometry$Sphere3d$translateBy = F2(
+	function (displacement, sphere) {
+		return A2(
+			$ianmackenzie$elm_geometry$Sphere3d$withRadius,
+			$ianmackenzie$elm_geometry$Sphere3d$radius(sphere),
+			A2(
+				$ianmackenzie$elm_geometry$Point3d$translateBy,
+				displacement,
+				$ianmackenzie$elm_geometry$Sphere3d$centerPoint(sphere)));
+	});
 var $avh4$elm_color$Color$yellow = A4($avh4$elm_color$Color$RgbaSpace, 237 / 255, 212 / 255, 0 / 255, 1.0);
 var $author$project$Main$view = function (world) {
 	return {
@@ -15862,7 +16152,7 @@ var $author$project$Main$view = function (world) {
 							verticalFieldOfView: $ianmackenzie$elm_units$Angle$degrees(90),
 							viewpoint: $ianmackenzie$elm_3d_camera$Viewpoint3d$lookAt(
 								{
-									eyePoint: A3($ianmackenzie$elm_geometry$Point3d$meters, 5, 0, 10),
+									eyePoint: A3($ianmackenzie$elm_geometry$Point3d$meters, 2, 0, 8),
 									focalPoint: $ianmackenzie$elm_geometry$Point3d$origin,
 									upDirection: $ianmackenzie$elm_geometry$Direction3d$positiveZ
 								})
@@ -15872,10 +16162,10 @@ var $author$project$Main$view = function (world) {
 						$ianmackenzie$elm_units$Pixels$int(800),
 						$ianmackenzie$elm_units$Pixels$int(600)),
 					entities: _Utils_ap(
-						A3(
-							$author$project$Ecs$System$foldl,
-							F2(
-								function (pos, bees) {
+						A4(
+							$author$project$Ecs$System$foldl2,
+							F3(
+								function (pos, graphics, entities) {
 									var _v0 = A2(
 										$Voronchuk$hexagons$Hexagons$Layout$hexToPoint,
 										{
@@ -15886,24 +16176,39 @@ var $author$project$Main$view = function (world) {
 										pos);
 									var x = _v0.a;
 									var y = _v0.b;
-									return A2(
-										$elm$core$List$cons,
-										A2(
-											$ianmackenzie$elm_3d_scene$Scene3d$sphereWithShadow,
-											$ianmackenzie$elm_3d_scene$Scene3d$Material$matte($avh4$elm_color$Color$lightBrown),
-											A2(
-												$ianmackenzie$elm_geometry$Sphere3d$atPoint,
-												A3($ianmackenzie$elm_geometry$Point3d$meters, x, y, 1),
-												$ianmackenzie$elm_units$Length$meters(0.25))),
-										bees);
+									var graphicsEntity = function () {
+										if (graphics.$ === 'BeeG') {
+											var c = graphics.a;
+											var s = graphics.b;
+											return A2(
+												$ianmackenzie$elm_3d_scene$Scene3d$sphereWithShadow,
+												$ianmackenzie$elm_3d_scene$Scene3d$Material$matte(c),
+												A2(
+													$ianmackenzie$elm_geometry$Sphere3d$translateBy,
+													A3($ianmackenzie$elm_geometry$Vector3d$meters, x, y, 0),
+													s));
+										} else {
+											var c = graphics.a;
+											var s = graphics.b;
+											return A2(
+												$ianmackenzie$elm_3d_scene$Scene3d$cylinderWithShadow,
+												$ianmackenzie$elm_3d_scene$Scene3d$Material$matte(c),
+												A2(
+													$ianmackenzie$elm_geometry$Cylinder3d$translateBy,
+													A3($ianmackenzie$elm_geometry$Vector3d$meters, x, y, 0),
+													s));
+										}
+									}();
+									return A2($elm$core$List$cons, graphicsEntity, entities);
 								}),
 							world.positionComp,
+							world.graphicsComp,
 							_List_Nil),
 						A2(
 							$elm$core$List$map,
-							function (_v1) {
-								var x = _v1.a;
-								var y = _v1.b;
+							function (_v2) {
+								var x = _v2.a;
+								var y = _v2.b;
 								return A2(
 									$ianmackenzie$elm_3d_scene$Scene3d$cylinderWithShadow,
 									$ianmackenzie$elm_3d_scene$Scene3d$Material$matte($avh4$elm_color$Color$yellow),
