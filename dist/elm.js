@@ -494,7 +494,7 @@ ${variant}`;
   var VERSION = "1.0.2";
   var TARGET_NAME = "bee simulation";
   var INITIAL_ELM_COMPILED_TIMESTAMP = Number(
-    "1664491879776"
+    "1664492287774"
   );
   var ORIGINAL_COMPILATION_MODE = "standard";
   var WEBSOCKET_PORT = "62600";
@@ -11748,8 +11748,65 @@ var $ianmackenzie$elm_geometry$Cylinder3d$centeredOn = F3(
 				radius: $ianmackenzie$elm_units$Quantity$abs(_arguments.radius)
 			});
 	});
-var $author$project$Main$createFlower = F3(
-	function (startPos, color, world) {
+var $ianmackenzie$elm_geometry$Geometry$Types$Vector3d = function (a) {
+	return {$: 'Vector3d', a: a};
+};
+var $ianmackenzie$elm_geometry$Vector3d$meters = F3(
+	function (x, y, z) {
+		return $ianmackenzie$elm_geometry$Geometry$Types$Vector3d(
+			{x: x, y: y, z: z});
+	});
+var $ianmackenzie$elm_geometry$Axis3d$rotateAround = F2(
+	function (otherAxis, angle) {
+		var rotatePoint = A2($ianmackenzie$elm_geometry$Point3d$rotateAround, otherAxis, angle);
+		var rotateDirection = A2($ianmackenzie$elm_geometry$Direction3d$rotateAround, otherAxis, angle);
+		return function (_v0) {
+			var axis = _v0.a;
+			return A2(
+				$ianmackenzie$elm_geometry$Axis3d$through,
+				rotatePoint(axis.originPoint),
+				rotateDirection(axis.direction));
+		};
+	});
+var $ianmackenzie$elm_geometry$Cylinder3d$rotateAround = F3(
+	function (givenAxis, givenAngle, _v0) {
+		var cylinder = _v0.a;
+		return $ianmackenzie$elm_geometry$Geometry$Types$Cylinder3d(
+			{
+				axis: A3($ianmackenzie$elm_geometry$Axis3d$rotateAround, givenAxis, givenAngle, cylinder.axis),
+				length: cylinder.length,
+				radius: cylinder.radius
+			});
+	});
+var $ianmackenzie$elm_geometry$Point3d$translateBy = F2(
+	function (_v0, _v1) {
+		var v = _v0.a;
+		var p = _v1.a;
+		return $ianmackenzie$elm_geometry$Geometry$Types$Point3d(
+			{x: p.x + v.x, y: p.y + v.y, z: p.z + v.z});
+	});
+var $ianmackenzie$elm_geometry$Axis3d$translateBy = F2(
+	function (vector, _v0) {
+		var axis = _v0.a;
+		return A2(
+			$ianmackenzie$elm_geometry$Axis3d$through,
+			A2($ianmackenzie$elm_geometry$Point3d$translateBy, vector, axis.originPoint),
+			axis.direction);
+	});
+var $ianmackenzie$elm_geometry$Cylinder3d$translateBy = F2(
+	function (displacement, _v0) {
+		var cylinder = _v0.a;
+		return $ianmackenzie$elm_geometry$Geometry$Types$Cylinder3d(
+			{
+				axis: A2($ianmackenzie$elm_geometry$Axis3d$translateBy, displacement, cylinder.axis),
+				length: cylinder.length,
+				radius: cylinder.radius
+			});
+	});
+var $ianmackenzie$elm_geometry$Direction3d$x = $ianmackenzie$elm_geometry$Direction3d$positiveX;
+var $ianmackenzie$elm_geometry$Axis3d$x = A2($ianmackenzie$elm_geometry$Axis3d$through, $ianmackenzie$elm_geometry$Point3d$origin, $ianmackenzie$elm_geometry$Direction3d$x);
+var $author$project$Main$createFlower = F4(
+	function (startPos, color, offsets, world) {
 		return A2(
 			$author$project$Ecs$Entity$with,
 			_Utils_Tuple2(
@@ -11758,13 +11815,20 @@ var $author$project$Main$createFlower = F3(
 					$author$project$Main$FlowerG,
 					color,
 					A3(
-						$ianmackenzie$elm_geometry$Cylinder3d$centeredOn,
-						A3($ianmackenzie$elm_geometry$Point3d$meters, 0, 0, 0.5),
-						$ianmackenzie$elm_geometry$Direction3d$positiveZ,
-						{
-							length: $ianmackenzie$elm_units$Length$meters(0.25),
-							radius: $ianmackenzie$elm_units$Length$meters(0.5)
-						}))),
+						$ianmackenzie$elm_geometry$Cylinder3d$rotateAround,
+						$ianmackenzie$elm_geometry$Axis3d$x,
+						$ianmackenzie$elm_units$Angle$degrees(offsets.angle),
+						A2(
+							$ianmackenzie$elm_geometry$Cylinder3d$translateBy,
+							A3($ianmackenzie$elm_geometry$Vector3d$meters, offsets.x, offsets.y, 0),
+							A3(
+								$ianmackenzie$elm_geometry$Cylinder3d$centeredOn,
+								A3($ianmackenzie$elm_geometry$Point3d$meters, 0, 0, 0.5),
+								$ianmackenzie$elm_geometry$Direction3d$positiveZ,
+								{
+									length: $ianmackenzie$elm_units$Length$meters(0.25),
+									radius: $ianmackenzie$elm_units$Length$meters(0.35)
+								}))))),
 			A2(
 				$author$project$Ecs$Entity$with,
 				_Utils_Tuple2($author$project$Main$flowerSpec, $author$project$Main$Flower),
@@ -11775,6 +11839,23 @@ var $author$project$Main$createFlower = F3(
 						$author$project$Ecs$Entity$with,
 						_Utils_Tuple2($author$project$Main$positionSpec, startPos),
 						A2($author$project$Ecs$Entity$create, $author$project$Main$ecsConfigSpec, world))))).b;
+	});
+var $elm$random$Random$float = F2(
+	function (a, b) {
+		return $elm$random$Random$Generator(
+			function (seed0) {
+				var seed1 = $elm$random$Random$next(seed0);
+				var range = $elm$core$Basics$abs(b - a);
+				var n1 = $elm$random$Random$peel(seed1);
+				var n0 = $elm$random$Random$peel(seed0);
+				var lo = (134217727 & n1) * 1.0;
+				var hi = (67108863 & n0) * 1.0;
+				var val = ((hi * 134217728.0) + lo) / 9007199254740992.0;
+				var scaled = (val * range) + a;
+				return _Utils_Tuple2(
+					scaled,
+					$elm$random$Random$next(seed1));
+			});
 	});
 var $author$project$Ecs$System$foldl2 = F4(
 	function (f, comp1, comp2, acc_) {
@@ -11795,48 +11876,31 @@ var $author$project$Ecs$System$foldl2 = F4(
 			comp1,
 			acc_);
 	});
-var $elm$random$Random$map2 = F3(
-	function (func, _v0, _v1) {
+var $elm$random$Random$map3 = F4(
+	function (func, _v0, _v1, _v2) {
 		var genA = _v0.a;
 		var genB = _v1.a;
+		var genC = _v2.a;
 		return $elm$random$Random$Generator(
 			function (seed0) {
-				var _v2 = genA(seed0);
-				var a = _v2.a;
-				var seed1 = _v2.b;
-				var _v3 = genB(seed1);
-				var b = _v3.a;
-				var seed2 = _v3.b;
+				var _v3 = genA(seed0);
+				var a = _v3.a;
+				var seed1 = _v3.b;
+				var _v4 = genB(seed1);
+				var b = _v4.a;
+				var seed2 = _v4.b;
+				var _v5 = genC(seed2);
+				var c = _v5.a;
+				var seed3 = _v5.b;
 				return _Utils_Tuple2(
-					A2(func, a, b),
-					seed2);
+					A3(func, a, b, c),
+					seed3);
 			});
-	});
-var $elm$core$Tuple$pair = F2(
-	function (a, b) {
-		return _Utils_Tuple2(a, b);
 	});
 var $avh4$elm_color$Color$red = A4($avh4$elm_color$Color$RgbaSpace, 204 / 255, 0 / 255, 0 / 255, 1.0);
 var $elm$random$Random$addOne = function (value) {
 	return _Utils_Tuple2(1, value);
 };
-var $elm$random$Random$float = F2(
-	function (a, b) {
-		return $elm$random$Random$Generator(
-			function (seed0) {
-				var seed1 = $elm$random$Random$next(seed0);
-				var range = $elm$core$Basics$abs(b - a);
-				var n1 = $elm$random$Random$peel(seed1);
-				var n0 = $elm$random$Random$peel(seed0);
-				var lo = (134217727 & n1) * 1.0;
-				var hi = (67108863 & n0) * 1.0;
-				var val = ((hi * 134217728.0) + lo) / 9007199254740992.0;
-				var scaled = (val * range) + a;
-				return _Utils_Tuple2(
-					scaled,
-					$elm$random$Random$next(seed1));
-			});
-	});
 var $elm$random$Random$getByWeight = F3(
 	function (_v0, others, countdown) {
 		getByWeight:
@@ -11916,30 +11980,48 @@ var $author$project$Main$spawnFlower = function (world) {
 	} else {
 		var _v0 = A2(
 			$elm$random$Random$step,
-			A3(
-				$elm$random$Random$map2,
-				$elm$core$Tuple$pair,
+			A4(
+				$elm$random$Random$map3,
+				F3(
+					function (p, c, o) {
+						return _Utils_Tuple3(p, c, o);
+					}),
 				A2(
 					$elm$random$Random$map,
 					$elm$core$Tuple$first,
 					$elm_community$random_extra$Random$List$choose(
-						$elm$core$Dict$values(world.board))),
+						$elm$core$Dict$values(
+							A2(
+								$elm$core$Dict$remove,
+								_Utils_Tuple3(0, 0, 0),
+								world.board)))),
 				A2(
 					$elm$random$Random$uniform,
 					$avh4$elm_color$Color$red,
 					_List_fromArray(
-						[$avh4$elm_color$Color$blue]))),
+						[$avh4$elm_color$Color$blue])),
+				A4(
+					$elm$random$Random$map3,
+					F3(
+						function (x, y, angle) {
+							return {angle: angle, x: x, y: y};
+						}),
+					A2($elm$random$Random$float, -0.25, 0.25),
+					A2($elm$random$Random$float, -0.25, 0.25),
+					A2($elm$random$Random$float, -5, 5))),
 			world.seed);
 		var _v1 = _v0.a;
 		var pos = _v1.a;
 		var color = _v1.b;
+		var offsets = _v1.c;
 		var seed = _v0.b;
 		if (pos.$ === 'Just') {
 			var position = pos.a;
-			return A3(
+			return A4(
 				$author$project$Main$createFlower,
 				position,
 				color,
+				offsets,
 				_Utils_update(
 					world,
 					{seed: seed}));
@@ -12211,9 +12293,6 @@ var $ianmackenzie$elm_geometry$Vector3d$unwrap = function (_v0) {
 var $ianmackenzie$elm_geometry_linear_algebra_interop$Geometry$Interop$LinearAlgebra$Vector3d$toVec3 = function (vector) {
 	return $elm_explorations$linear_algebra$Math$Vector3$fromRecord(
 		$ianmackenzie$elm_geometry$Vector3d$unwrap(vector));
-};
-var $ianmackenzie$elm_geometry$Geometry$Types$Vector3d = function (a) {
-	return {$: 'Vector3d', a: a};
 };
 var $ianmackenzie$elm_geometry$Vector3d$cross = F2(
 	function (_v0, _v1) {
@@ -14609,7 +14688,6 @@ var $ianmackenzie$elm_geometry$Geometry$Types$SketchPlane3d = function (a) {
 	return {$: 'SketchPlane3d', a: a};
 };
 var $ianmackenzie$elm_geometry$SketchPlane3d$unsafe = $ianmackenzie$elm_geometry$Geometry$Types$SketchPlane3d;
-var $ianmackenzie$elm_geometry$Direction3d$x = $ianmackenzie$elm_geometry$Direction3d$positiveX;
 var $ianmackenzie$elm_geometry$Direction3d$y = $ianmackenzie$elm_geometry$Direction3d$positiveY;
 var $ianmackenzie$elm_geometry$SketchPlane3d$xy = $ianmackenzie$elm_geometry$SketchPlane3d$unsafe(
 	{originPoint: $ianmackenzie$elm_geometry$Point3d$origin, xDirection: $ianmackenzie$elm_geometry$Direction3d$x, yDirection: $ianmackenzie$elm_geometry$Direction3d$y});
@@ -15014,11 +15092,6 @@ var $ianmackenzie$elm_3d_scene$Scene3d$Material$matte = function (materialColor)
 			$ianmackenzie$elm_3d_scene$Scene3d$ColorConversions$colorToLinearRgb(materialColor)),
 		$ianmackenzie$elm_3d_scene$Scene3d$Types$Constant($ianmackenzie$elm_3d_scene$Scene3d$Types$VerticalNormal));
 };
-var $ianmackenzie$elm_geometry$Vector3d$meters = F3(
-	function (x, y, z) {
-		return $ianmackenzie$elm_geometry$Geometry$Types$Vector3d(
-			{x: x, y: y, z: z});
-	});
 var $Voronchuk$hexagons$Hexagons$Layout$orientationLayoutPointy = {
 	forward_matrix: {
 		f0: $elm$core$Basics$sqrt(3.0),
@@ -16732,13 +16805,6 @@ var $ianmackenzie$elm_3d_scene$Scene3d$sunny = function (_arguments) {
 };
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
-var $ianmackenzie$elm_geometry$Point3d$translateBy = F2(
-	function (_v0, _v1) {
-		var v = _v0.a;
-		var p = _v1.a;
-		return $ianmackenzie$elm_geometry$Geometry$Types$Point3d(
-			{x: p.x + v.x, y: p.y + v.y, z: p.z + v.z});
-	});
 var $ianmackenzie$elm_geometry$Frame3d$translateBy = F2(
 	function (vector, frame) {
 		return $ianmackenzie$elm_geometry$Frame3d$unsafe(
@@ -16761,24 +16827,6 @@ var $ianmackenzie$elm_geometry$Block3d$translateBy = F2(
 					displacement,
 					$ianmackenzie$elm_geometry$Block3d$axes(block)),
 				dimensions: $ianmackenzie$elm_geometry$Block3d$dimensions(block)
-			});
-	});
-var $ianmackenzie$elm_geometry$Axis3d$translateBy = F2(
-	function (vector, _v0) {
-		var axis = _v0.a;
-		return A2(
-			$ianmackenzie$elm_geometry$Axis3d$through,
-			A2($ianmackenzie$elm_geometry$Point3d$translateBy, vector, axis.originPoint),
-			axis.direction);
-	});
-var $ianmackenzie$elm_geometry$Cylinder3d$translateBy = F2(
-	function (displacement, _v0) {
-		var cylinder = _v0.a;
-		return $ianmackenzie$elm_geometry$Geometry$Types$Cylinder3d(
-			{
-				axis: A2($ianmackenzie$elm_geometry$Axis3d$translateBy, displacement, cylinder.axis),
-				length: cylinder.length,
-				radius: cylinder.radius
 			});
 	});
 var $ianmackenzie$elm_geometry$Sphere3d$translateBy = F2(

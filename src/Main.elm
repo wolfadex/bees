@@ -196,8 +196,18 @@ createBee startPos world =
         |> Tuple.second
 
 
-createFlower : Hex -> Color -> World -> World
-createFlower startPos color world =
+createFlower :
+    Hex
+    -> Color
+    ->
+        { x : Float
+        , y : Float
+        , angle : Float
+        , radius : Float
+        }
+    -> World
+    -> World
+createFlower startPos color offsets world =
     world
         |> Ecs.Entity.create ecsConfigSpec
         |> Ecs.Entity.with ( positionSpec, startPos )
@@ -208,9 +218,11 @@ createFlower startPos color world =
             , FlowerG color
                 (Cylinder3d.centeredOn (Point3d.meters 0 0 0.5)
                     Direction3d.positiveZ
-                    { radius = Length.meters 0.5
+                    { radius = Length.meters offset.radius
                     , length = Length.meters 0.25
                     }
+                    |> Cylinder3d.translateBy (Vector3d.meters offsets.x offsets.y 0)
+                    |> Cylinder3d.rotateAround Axis3d.x (Angle.degrees offsets.angle)
                 )
             )
         |> Tuple.second
@@ -343,22 +355,36 @@ spawnFlower world =
 
     else
         let
-            ( ( pos, color ), seed ) =
+            ( ( pos, color, offsets ), seed ) =
                 Random.step
-                    (Random.map2 Tuple.pair
+                    (Random.map3 (\p c o -> ( p, c, o ))
                         (world.board
+                            |> Dict.remove ( 0, 0, 0 )
                             |> Dict.values
                             |> Random.List.choose
                             |> Random.map Tuple.first
                         )
                         (Random.uniform Color.red [ Color.blue ])
+                        (Random.map4
+                            (\x y angle radius ->
+                                { x = x
+                                , y = y
+                                , angle = angle
+                                , radius = radius
+                                }
+                            )
+                            (Random.float -0.25 0.25)
+                            (Random.float -0.25 0.25)
+                            (Random.float -5 5)
+                            (Random.float 0.25 0.4)
+                        )
                     )
                     world.seed
         in
         case pos of
             Just position ->
                 { world | seed = seed }
-                    |> createFlower position color
+                    |> createFlower position color offsets
 
             Nothing ->
                 { world | seed = seed }
