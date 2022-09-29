@@ -2,6 +2,8 @@ module Main exposing (main)
 
 import AStar.Generalised
 import Angle
+import Axis3d
+import Block3d exposing (Block3d)
 import Browser
 import Browser.Events
 import Camera3d
@@ -18,6 +20,7 @@ import Hexagons.Hex exposing (Direction(..), Hex(..))
 import Hexagons.Layout
 import Hexagons.Map
 import Html
+import Html.Attributes
 import Length exposing (Meters)
 import Pixels
 import Point3d
@@ -74,6 +77,28 @@ type AI
     = BeeAI
 
 
+flowerSpec : Ecs.Component.Spec Flower { world | flowerComp : Ecs.Component Flower }
+flowerSpec =
+    { get = .flowerComp
+    , set = \comp world -> { world | flowerComp = comp }
+    }
+
+
+type Flower
+    = Flower
+
+
+hiveSpec : Ecs.Component.Spec Hive { world | hiveComp : Ecs.Component Hive }
+hiveSpec =
+    { get = .hiveComp
+    , set = \comp world -> { world | hiveComp = comp }
+    }
+
+
+type Hive
+    = Hive
+
+
 graphicsSpec : Ecs.Component.Spec Graphics { world | graphicsComp : Ecs.Component Graphics }
 graphicsSpec =
     { get = .graphicsComp
@@ -84,6 +109,14 @@ graphicsSpec =
 type Graphics
     = BeeG Color (Sphere3d Meters WorldSpace)
     | FlowerG Color (Cylinder3d Meters WorldSpace)
+    | HiveG Color (Block3d Meters WorldSpace)
+
+
+pollenSpec : Ecs.Component.Spec Int { world | pollenComp : Ecs.Component Int }
+pollenSpec =
+    { get = .pollenComp
+    , set = \comp world -> { world | pollenComp = comp }
+    }
 
 
 type alias World =
@@ -95,6 +128,9 @@ type alias World =
     , goalComp : Ecs.Component Hex
     , aiComp : Ecs.Component AI
     , graphicsComp : Ecs.Component Graphics
+    , pollenComp : Ecs.Component Int
+    , flowerComp : Ecs.Component Flower
+    , hiveComp : Ecs.Component Hive
     }
 
 
@@ -119,20 +155,37 @@ init () =
       , goalComp = Ecs.Component.empty
       , aiComp = Ecs.Component.empty
       , graphicsComp = Ecs.Component.empty
+      , pollenComp = Ecs.Component.empty
+      , flowerComp = Ecs.Component.empty
+      , hiveComp = Ecs.Component.empty
       }
-        |> createBeeAt hexOrigin
-        |> createBeeAt hexOrigin
-        |> createFlowerAt hexOrigin Color.red
+        |> createBee hexOrigin
+        |> createBee hexOrigin
+        |> Ecs.Entity.create ecsConfigSpec
+        |> Ecs.Entity.with ( positionSpec, hexOrigin )
+        |> Ecs.Entity.with ( hiveSpec, Hive )
+        |> Ecs.Entity.with ( pollenSpec, 0 )
+        |> Ecs.Entity.with
+            ( graphicsSpec
+            , HiveG Color.brown
+                (Block3d.from
+                    (Point3d.meters 0.5 0.5 1.5)
+                    (Point3d.meters -0.5 -0.5 0)
+                    |> Block3d.rotateAround Axis3d.z (Angle.degrees 45)
+                )
+            )
+        |> Tuple.second
     , Cmd.none
     )
 
 
-createBeeAt : Hex -> World -> World
-createBeeAt startPos world =
+createBee : Hex -> World -> World
+createBee startPos world =
     world
         |> Ecs.Entity.create ecsConfigSpec
         |> Ecs.Entity.with ( positionSpec, startPos )
         |> Ecs.Entity.with ( aiSpec, BeeAI )
+        |> Ecs.Entity.with ( pollenSpec, 0 )
         |> Ecs.Entity.with
             ( graphicsSpec
             , BeeG Color.lightBrown
@@ -143,11 +196,13 @@ createBeeAt startPos world =
         |> Tuple.second
 
 
-createFlowerAt : Hex -> Color -> World -> World
-createFlowerAt startPos color world =
+createFlower : Hex -> Color -> World -> World
+createFlower startPos color world =
     world
         |> Ecs.Entity.create ecsConfigSpec
         |> Ecs.Entity.with ( positionSpec, startPos )
+        |> Ecs.Entity.with ( pollenSpec, 10 )
+        |> Ecs.Entity.with ( flowerSpec, Flower )
         |> Ecs.Entity.with
             ( graphicsSpec
             , FlowerG color
@@ -158,6 +213,16 @@ createFlowerAt startPos color world =
                     }
                 )
             )
+        |> Tuple.second
+
+
+removeFlower : Ecs.Entity -> World -> World
+removeFlower entity world =
+    ( entity, world )
+        |> Ecs.Entity.remove positionSpec
+        |> Ecs.Entity.remove pollenSpec
+        |> Ecs.Entity.remove flowerSpec
+        |> Ecs.Entity.remove graphicsSpec
         |> Tuple.second
 
 
@@ -207,6 +272,7 @@ runTicks ticksToRun world =
         runTicks (ticksToRun - 1)
             (world
                 |> navigate
+                |> collectPollen
                 |> giveGoals
                 |> spawnFlower
             )
@@ -214,6 +280,45 @@ runTicks ticksToRun world =
 
 tickTime =
     250
+
+
+collectPollen : Ecs.System.System World
+collectPollen world =
+    Ecs.System.indexedFoldl3
+        (\entity ai position pollen w ->
+            case ai of
+                BeeAI ->
+                    let
+                        maybeFlower =
+                            Ecs.System.indexedFoldl3
+                                (\flower flowerPos flowerPollen _ result ->
+                                    if position == flowerPos && flowerPollen > 0 then
+                                        Just ( flower, flowerPollen )
+
+                                    else
+                                        result
+                                )
+                                w.positionComp
+                                w.pollenComp
+                                w.flowerComp
+                                Nothing
+                    in
+                    case maybeFlower of
+                        Just ( flower, flowerPollen ) ->
+                            { w
+                                | pollenComp =
+                                    w.pollenComp
+                                        |> Ecs.Component.update entity (\p -> p + flowerPollen)
+                            }
+                                |> removeFlower flower
+
+                        Nothing ->
+                            w
+        )
+        world.aiComp
+        world.positionComp
+        world.pollenComp
+        world
 
 
 spawnFlower : Ecs.System.System World
@@ -253,7 +358,7 @@ spawnFlower world =
         case pos of
             Just position ->
                 { world | seed = seed }
-                    |> createFlowerAt position color
+                    |> createFlower position color
 
             Nothing ->
                 { world | seed = seed }
@@ -282,11 +387,7 @@ navigate world =
                             nextPos =
                                 IntCubeHex next
                         in
-                        if nextPos == goal then
-                            { w | goalComp = Ecs.Component.remove entity w.goalComp }
-
-                        else
-                            { w | positionComp = Ecs.Component.set entity nextPos w.positionComp }
+                        { w | positionComp = Ecs.Component.set entity nextPos w.positionComp }
 
                     _ ->
                         w
@@ -342,7 +443,7 @@ giveGoals world =
         needGoals : List Ecs.Entity
         needGoals =
             Ecs.System.indexedFoldl2
-                (\entity _ ai result ->
+                (\entity _ _ result ->
                     case Ecs.Component.get entity world.goalComp of
                         Nothing ->
                             entity :: result
@@ -358,10 +459,23 @@ giveGoals world =
         |> List.foldl
             (\entity w ->
                 let
+                    flowersWithPollen =
+                        Ecs.System.foldl3
+                            (\position _ pollenCount result ->
+                                if pollenCount > 0 then
+                                    position :: result
+
+                                else
+                                    result
+                            )
+                            w.positionComp
+                            w.flowerComp
+                            w.pollenComp
+                            []
+
                     ( goal, nextSeed ) =
                         Random.step
-                            (w.board
-                                |> Dict.values
+                            (flowersWithPollen
                                 |> Random.List.choose
                                 |> Random.map Tuple.first
                             )
@@ -385,8 +499,7 @@ view : World -> Browser.Document Msg
 view world =
     { title = "Bees!!"
     , body =
-        [ Html.text "Bees!!"
-        , Scene3d.sunny
+        [ Scene3d.sunny
             { upDirection = Direction3d.positiveZ
             , sunlightDirection = Direction3d.negativeZ
             , shadows = True
@@ -395,7 +508,7 @@ view world =
                 Camera3d.perspective
                     { viewpoint =
                         Viewpoint3d.lookAt
-                            { eyePoint = Point3d.meters 2 0 8
+                            { eyePoint = Point3d.meters 0 -3 7
                             , focalPoint = Point3d.origin
                             , upDirection = Direction3d.positiveZ
                             }
@@ -426,6 +539,11 @@ view world =
                                         Scene3d.cylinderWithShadow
                                             (Scene3d.Material.matte c)
                                             (s |> Cylinder3d.translateBy (Vector3d.meters x y 0))
+
+                                    HiveG c s ->
+                                        Scene3d.blockWithShadow
+                                            (Scene3d.Material.matte c)
+                                            (s |> Block3d.translateBy (Vector3d.meters x y 0))
                         in
                         graphicsEntity :: entities
                     )
@@ -444,7 +562,7 @@ view world =
                             |> List.map
                                 (\( x, y ) ->
                                     Scene3d.cylinderWithShadow
-                                        (Scene3d.Material.matte Color.yellow)
+                                        (Scene3d.Material.matte Color.green)
                                         (Cylinder3d.centeredOn (Point3d.meters x y 0)
                                             Direction3d.positiveZ
                                             { radius = Length.meters 0.85
@@ -454,5 +572,21 @@ view world =
                                 )
                        )
             }
+        , Ecs.System.foldl2
+            (\pollen ai res ->
+                case ai of
+                    BeeAI ->
+                        Html.span
+                            []
+                            [ Html.text ("Pollen count: " ++ String.fromInt pollen) ]
+                            :: res
+            )
+            world.pollenComp
+            world.aiComp
+            []
+            |> Html.div
+                [ Html.Attributes.style "display" "flex"
+                , Html.Attributes.style "flex-direction" "column"
+                ]
         ]
     }
