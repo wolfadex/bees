@@ -1,0 +1,3 @@
+[submodule "elm-vendored/elm-ecs"]
+	path = elm-vendored/elm-ecs
+	url = git@github.com:wolfadex/elm-ecs.git

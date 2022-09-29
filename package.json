@@ -1,0 +1,14 @@
+{
+  "name": "bees",
+  "version": "1.0.0",
+  "description": "A very basic template for an [Elm](https://elm-lang.org/) project, using [Nix](https://nixos.org/) and [direnv](https://direnv.net/).",
+  "main": "index.js",
+  "scripts": {
+    "dev": "elm-watch hot"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "elm-watch": "^1.0.2"
+  }
+}
