@@ -124,6 +124,9 @@ type alias World =
     , seed : Seed
     , time : Float
     , board : Hexagons.Map.Map
+    , hive : Maybe Ecs.Entity
+
+    -- Components
     , positionComp : Ecs.Component Hex
     , goalComp : Ecs.Component Hex
     , aiComp : Ecs.Component AI
@@ -140,41 +143,50 @@ type WorldSpace
 
 init : () -> ( World, Cmd Msg )
 init () =
-    ( { ecsConfig = Ecs.Config.init
-      , seed = Random.initialSeed 0
-      , time = 0
-      , board =
-            (hexOrigin
-                :: Hexagons.Layout.drawCircle hexOrigin 1
-                ++ Hexagons.Layout.drawCircle hexOrigin 2
-                ++ Hexagons.Layout.drawCircle hexOrigin 3
-            )
-                |> List.map (\hex -> ( Hexagons.Map.hashHex hex, hex ))
-                |> Dict.fromList
-      , positionComp = Ecs.Component.empty
-      , goalComp = Ecs.Component.empty
-      , aiComp = Ecs.Component.empty
-      , graphicsComp = Ecs.Component.empty
-      , pollenComp = Ecs.Component.empty
-      , flowerComp = Ecs.Component.empty
-      , hiveComp = Ecs.Component.empty
-      }
-        |> createBee hexOrigin
-        |> createBee hexOrigin
-        |> Ecs.Entity.create ecsConfigSpec
-        |> Ecs.Entity.with ( positionSpec, hexOrigin )
-        |> Ecs.Entity.with ( hiveSpec, Hive )
-        |> Ecs.Entity.with ( pollenSpec, 0 )
-        |> Ecs.Entity.with
-            ( graphicsSpec
-            , HiveG Color.brown
-                (Block3d.from
-                    (Point3d.meters 0.5 0.5 1.5)
-                    (Point3d.meters -0.5 -0.5 0)
-                    |> Block3d.rotateAround Axis3d.z (Angle.degrees 45)
+    let
+        baseWorld =
+            { ecsConfig = Ecs.Config.init
+            , seed = Random.initialSeed 0
+            , time = 0
+            , board =
+                (hexOrigin
+                    :: Hexagons.Layout.drawCircle hexOrigin 1
+                    ++ Hexagons.Layout.drawCircle hexOrigin 2
+                    ++ Hexagons.Layout.drawCircle hexOrigin 3
                 )
-            )
-        |> Tuple.second
+                    |> List.map (\hex -> ( Hexagons.Map.hashHex hex, hex ))
+                    |> Dict.fromList
+            , hive = Nothing
+
+            -- Components
+            , positionComp = Ecs.Component.empty
+            , goalComp = Ecs.Component.empty
+            , aiComp = Ecs.Component.empty
+            , graphicsComp = Ecs.Component.empty
+            , pollenComp = Ecs.Component.empty
+            , flowerComp = Ecs.Component.empty
+            , hiveComp = Ecs.Component.empty
+            }
+                |> createBee hexOrigin
+                |> createBee hexOrigin
+
+        ( hive, worldWithHive ) =
+            baseWorld
+                |> Ecs.Entity.create ecsConfigSpec
+                |> Ecs.Entity.with ( positionSpec, hexOrigin )
+                |> Ecs.Entity.with ( hiveSpec, Hive )
+                |> Ecs.Entity.with ( pollenSpec, 0 )
+                |> Ecs.Entity.with
+                    ( graphicsSpec
+                    , HiveG Color.brown
+                        (Block3d.from
+                            (Point3d.meters 0.5 0.5 1.5)
+                            (Point3d.meters -0.5 -0.5 0)
+                            |> Block3d.rotateAround Axis3d.z (Angle.degrees 45)
+                        )
+                    )
+    in
+    ( { worldWithHive | hive = Just hive }
     , Cmd.none
     )
 
@@ -188,7 +200,7 @@ createBee startPos world =
         |> Ecs.Entity.with ( pollenSpec, 0 )
         |> Ecs.Entity.with
             ( graphicsSpec
-            , BeeG Color.lightBrown
+            , BeeG Color.yellow
                 (Sphere3d.atPoint (Point3d.meters 0 0 1)
                     (Length.meters 0.25)
                 )
@@ -283,10 +295,12 @@ runTicks ticksToRun world =
     else
         runTicks (ticksToRun - 1)
             (world
-                |> navigate
-                |> collectPollen
-                |> giveGoals
                 |> spawnFlower
+                |> navigate
+                |> assignGoal
+                |> collectPollen
+                |> spawnBees
+                |> givePollen
             )
 
 
@@ -294,10 +308,65 @@ tickTime =
     250
 
 
+spawnBees : Ecs.System.System World
+spawnBees world =
+    case world.hive of
+        Nothing ->
+            world
+
+        Just hive ->
+            case Ecs.Component.get hive world.pollenComp of
+                Nothing ->
+                    world
+
+                Just pollenCount ->
+                    if pollenCount >= 1000 then
+                        { world
+                            | pollenComp = Ecs.Component.update hive (\p -> p - 1000) world.pollenComp
+                        }
+                            |> createBee hexOrigin
+
+                    else
+                        world
+
+
+givePollen : Ecs.System.System World
+givePollen world =
+    Ecs.System.indexedFoldl3
+        (\entity ai position _ w ->
+            case ai of
+                BeeAI ->
+                    if position == hexOrigin then
+                        case w.hive of
+                            Nothing ->
+                                w
+
+                            Just hive ->
+                                case Ecs.Component.get entity w.pollenComp of
+                                    Nothing ->
+                                        w
+
+                                    Just pol ->
+                                        { w
+                                            | pollenComp =
+                                                w.pollenComp
+                                                    |> Ecs.Component.set entity 0
+                                                    |> Ecs.Component.update hive (\p -> p + pol)
+                                        }
+
+                    else
+                        w
+        )
+        world.aiComp
+        world.positionComp
+        world.pollenComp
+        world
+
+
 collectPollen : Ecs.System.System World
 collectPollen world =
     Ecs.System.indexedFoldl3
-        (\entity ai position pollen w ->
+        (\entity ai position _ w ->
             case ai of
                 BeeAI ->
                     let
@@ -364,7 +433,24 @@ spawnFlower world =
                             |> Random.List.choose
                             |> Random.map Tuple.first
                         )
-                        (Random.uniform Color.red [ Color.blue ])
+                        (Random.float 0 0.74
+                            |> Random.map
+                                (\h ->
+                                    let
+                                        hue =
+                                            h + 0.0392156863
+                                    in
+                                    Color.hsl
+                                        (if hue > 1 then
+                                            hue - 1
+
+                                         else
+                                            hue
+                                        )
+                                        1
+                                        0.5
+                                )
+                        )
                         (Random.map4
                             (\x y angle radius ->
                                 { x = x
@@ -373,8 +459,8 @@ spawnFlower world =
                                 , radius = radius
                                 }
                             )
-                            (Random.float -0.25 0.25)
-                            (Random.float -0.25 0.25)
+                            (Random.float -0.35 0.35)
+                            (Random.float -0.35 0.35)
                             (Random.float -5 5)
                             (Random.float 0.25 0.4)
                         )
@@ -463,16 +549,16 @@ hexNeighbors board hash =
         |> Set.fromList
 
 
-giveGoals : Ecs.System.System World
-giveGoals world =
+assignGoal : Ecs.System.System World
+assignGoal world =
     let
-        needGoals : List Ecs.Entity
+        needGoals : List ( Ecs.Entity, AI )
         needGoals =
             Ecs.System.indexedFoldl2
-                (\entity _ _ result ->
+                (\entity _ ai result ->
                     case Ecs.Component.get entity world.goalComp of
                         Nothing ->
-                            entity :: result
+                            ( entity, ai ) :: result
 
                         Just _ ->
                             result
@@ -483,40 +569,51 @@ giveGoals world =
     in
     needGoals
         |> List.foldl
-            (\entity w ->
-                let
-                    flowersWithPollen =
-                        Ecs.System.foldl3
-                            (\position _ pollenCount result ->
-                                if pollenCount > 0 then
-                                    position :: result
+            (\( entity, ai ) w ->
+                case ai of
+                    BeeAI ->
+                        case Ecs.Component.get entity w.pollenComp of
+                            Nothing ->
+                                w
+
+                            Just pollen ->
+                                if pollen >= 100 then
+                                    { w | goalComp = Ecs.Component.set entity hexOrigin w.goalComp }
 
                                 else
-                                    result
-                            )
-                            w.positionComp
-                            w.flowerComp
-                            w.pollenComp
-                            []
+                                    let
+                                        flowersWithPollen =
+                                            Ecs.System.foldl3
+                                                (\position _ pollenCount result ->
+                                                    if pollenCount > 0 then
+                                                        position :: result
 
-                    ( goal, nextSeed ) =
-                        Random.step
-                            (flowersWithPollen
-                                |> Random.List.choose
-                                |> Random.map Tuple.first
-                            )
-                            w.seed
-                in
-                { w
-                    | goalComp =
-                        case goal of
-                            Nothing ->
-                                w.goalComp
+                                                    else
+                                                        result
+                                                )
+                                                w.positionComp
+                                                w.flowerComp
+                                                w.pollenComp
+                                                []
 
-                            Just g ->
-                                Ecs.Component.set entity g w.goalComp
-                    , seed = nextSeed
-                }
+                                        ( goal, nextSeed ) =
+                                            Random.step
+                                                (flowersWithPollen
+                                                    |> Random.List.choose
+                                                    |> Random.map Tuple.first
+                                                )
+                                                w.seed
+                                    in
+                                    { w
+                                        | goalComp =
+                                            case goal of
+                                                Nothing ->
+                                                    w.goalComp
+
+                                                Just g ->
+                                                    Ecs.Component.set entity g w.goalComp
+                                        , seed = nextSeed
+                                    }
             )
             world
 
@@ -599,12 +696,26 @@ view world =
                        )
             }
         , Ecs.System.foldl2
+            (\pollen _ res ->
+                Html.span
+                    []
+                    [ Html.text ("Hive pollen count: " ++ String.fromInt pollen) ]
+                    :: res
+            )
+            world.pollenComp
+            world.hiveComp
+            []
+            |> Html.div
+                [ Html.Attributes.style "display" "flex"
+                , Html.Attributes.style "flex-direction" "column"
+                ]
+        , Ecs.System.foldl2
             (\pollen ai res ->
                 case ai of
                     BeeAI ->
                         Html.span
                             []
-                            [ Html.text ("Pollen count: " ++ String.fromInt pollen) ]
+                            [ Html.text ("Bee pollen count: " ++ String.fromInt pollen) ]
                             :: res
             )
             world.pollenComp
