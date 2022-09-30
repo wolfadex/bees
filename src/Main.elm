@@ -140,6 +140,7 @@ pollenSpec =
 type Model
     = Loading
     | Loaded World
+    | FailedToLoad String
 
 
 type alias World =
@@ -306,6 +307,9 @@ subscriptions model =
         Loading ->
             Sub.none
 
+        FailedToLoad _ ->
+            Sub.none
+
         Loaded _ ->
             Browser.Events.onAnimationFrameDelta Tick
 
@@ -320,15 +324,30 @@ type alias CustomMesh =
     TriangularMesh { position : Point3d Meters WorldSpace, normal : Vector3d Unitless WorldSpace }
 
 
+errorToString : Http.Error -> String
+errorToString err =
+    case err of
+        Http.BadUrl url ->
+            "BadUrl: " ++ url
+
+        Http.Timeout ->
+            "Timeout"
+
+        Http.NetworkError ->
+            "NetworkError"
+
+        Http.BadStatus status ->
+            "BadStatus: " ++ String.fromInt status
+
+        Http.BadBody body ->
+            "BadBody: " ++ body
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case ( msg, model ) of
         ( GotMesh (Err err), Loading ) ->
-            let
-                _ =
-                    Debug.log "mesh load err" err
-            in
-            ( model, Cmd.none )
+            ( FailedToLoad (errorToString err), Cmd.none )
 
         ( GotMesh (Ok mesh), Loading ) ->
             let
@@ -757,6 +776,9 @@ view model =
 
             Loaded world ->
                 viewWorld world
+
+            FailedToLoad err ->
+                [ Html.text err ]
     }
 
 
