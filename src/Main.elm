@@ -246,7 +246,7 @@ createFlower startPos color offsets world =
                 (Cylinder3d.centeredOn (Point3d.meters 0 0 0.5)
                     Direction3d.positiveZ
                     { radius = Length.meters offsets.radius
-                    , length = Length.meters 0.25
+                    , length = Length.meters 0.1
                     }
                     |> Cylinder3d.translateBy (Vector3d.meters offsets.x offsets.y 0)
                     |> Cylinder3d.rotateAround Axis3d.x (Angle.degrees offsets.angle)
@@ -363,7 +363,7 @@ runTicks ticksToRun world =
 
 
 tickTime =
-    500
+    1000
 
 
 spawnBees : Ecs.System.System World
@@ -720,10 +720,10 @@ view world =
             , entities =
                 Scene3d.cylinderWithShadow
                     (Scene3d.Material.matte Color.green)
-                    (Cylinder3d.centeredOn Point3d.origin
+                    (Cylinder3d.centeredOn (Point3d.meters 0 0 -1.5)
                         Direction3d.positiveZ
                         { radius = Length.meters 7
-                        , length = Length.meters 0.25
+                        , length = Length.meters 3
                         }
                     )
                     :: Ecs.System.foldl2

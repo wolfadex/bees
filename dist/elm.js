@@ -494,7 +494,7 @@ ${variant}`;
   var VERSION = "1.0.2";
   var TARGET_NAME = "bee simulation";
   var INITIAL_ELM_COMPILED_TIMESTAMP = Number(
-    "1664505346758"
+    "1664505859148"
   );
   var ORIGINAL_COMPILATION_MODE = "debug";
   var WEBSOCKET_PORT = "57312";
@@ -16774,7 +16774,7 @@ var $author$project$Main$createFlower = F4(
 								A3($ianmackenzie$elm_geometry$Point3d$meters, 0, 0, 0.5),
 								$ianmackenzie$elm_geometry$Direction3d$positiveZ,
 								{
-									length: $ianmackenzie$elm_units$Length$meters(0.25),
+									length: $ianmackenzie$elm_units$Length$meters(0.1),
 									radius: $ianmackenzie$elm_units$Length$meters(offsets.radius)
 								}))))),
 			A2(
@@ -16989,7 +16989,7 @@ var $author$project$Main$runTicks = F2(
 			}
 		}
 	});
-var $author$project$Main$tickTime = 500;
+var $author$project$Main$tickTime = 1000;
 var $author$project$Main$update = F2(
 	function (msg, world) {
 		if (msg.$ === 'NoOp') {
@@ -21664,10 +21664,10 @@ var $author$project$Main$view = function (world) {
 							$ianmackenzie$elm_3d_scene$Scene3d$Material$matte($avh4$elm_color$Color$green),
 							A3(
 								$ianmackenzie$elm_geometry$Cylinder3d$centeredOn,
-								$ianmackenzie$elm_geometry$Point3d$origin,
+								A3($ianmackenzie$elm_geometry$Point3d$meters, 0, 0, -1.5),
 								$ianmackenzie$elm_geometry$Direction3d$positiveZ,
 								{
-									length: $ianmackenzie$elm_units$Length$meters(0.25),
+									length: $ianmackenzie$elm_units$Length$meters(3),
 									radius: $ianmackenzie$elm_units$Length$meters(7)
 								})),
 						_Utils_ap(
