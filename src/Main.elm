@@ -3,7 +3,6 @@ module Main exposing (main)
 import AStar.Generalised
 import Angle
 import Axis3d
-import Block3d exposing (Block3d)
 import Browser
 import Browser.Events
 import Camera3d
@@ -17,14 +16,14 @@ import Ecs.Config
 import Ecs.Entity
 import Ecs.System
 import Float.Extra
-import Frame3d exposing (Frame3d)
+import Frame3d
 import Hexagons.Hex exposing (Direction(..), Hex(..))
 import Hexagons.Layout
 import Hexagons.Map
 import Html exposing (Html)
 import Html.Attributes
 import Http
-import Length exposing (Meters)
+import Length exposing (Length, Meters)
 import Obj.Decode
 import Pixels
 import Point3d exposing (Point3d)
@@ -35,7 +34,7 @@ import Scene3d
 import Scene3d.Material
 import Scene3d.Mesh
 import Set exposing (Set)
-import Sphere3d exposing (Sphere3d)
+import Task
 import TriangularMesh exposing (TriangularMesh)
 import Vector3d exposing (Vector3d)
 import Viewpoint3d
@@ -125,9 +124,9 @@ graphicsSpec =
 
 
 type Graphics
-    = BeeG Color (Sphere3d Meters WorldSpace)
+    = BeeG
     | FlowerG Color (Cylinder3d Meters WorldSpace)
-    | HiveG Color (Block3d Meters WorldSpace)
+    | HiveG
 
 
 pollenSpec : Ecs.Component.Spec Int { world | pollenComp : Ecs.Component Int }
@@ -150,6 +149,7 @@ type alias World =
     , board : Hexagons.Map.Map
     , hive : Maybe Ecs.Entity
     , hiveMesh : Scene3d.Entity WorldSpace
+    , beeMesh : Scene3d.Entity WorldSpace
 
     -- Components
     , positionComp : Ecs.Component Hex
@@ -170,18 +170,54 @@ type WorldSpace
 init : () -> ( Model, Cmd Msg )
 init () =
     ( Loading
-    , Http.get
-        { url = "assets/hive.obj"
-        , expect =
-            Obj.Decode.expectObj GotMesh
-                Length.meters
-                (Obj.Decode.facesIn Frame3d.atOrigin)
-        }
+    , Task.map2 Tuple.pair
+        (getMesh "hive")
+        (getMesh "bee")
+        |> Task.attempt GotMesh
     )
 
 
-initWorld : Scene3d.Entity WorldSpace -> World
-initWorld hiveMesh =
+getMesh : String -> Task.Task Http.Error (TriangularMesh { position : Point3d Meters coordinates, normal : Vector3d Unitless coordinates })
+getMesh meshName =
+    Http.task
+        { method = "GET"
+        , headers = []
+        , url = "assets/" ++ meshName ++ ".obj"
+        , body = Http.emptyBody
+        , resolver =
+            Obj.Decode.facesIn Frame3d.atOrigin
+                |> objResolver Length.meters
+                |> Http.stringResolver
+        , timeout = Nothing
+        }
+
+
+objResolver : (Float -> Length) -> Obj.Decode.Decoder a -> Http.Response String -> Result Http.Error a
+objResolver toLength decoder response =
+    case response of
+        Http.BadUrl_ url ->
+            Err (Http.BadUrl url)
+
+        Http.Timeout_ ->
+            Err Http.Timeout
+
+        Http.NetworkError_ ->
+            Err Http.NetworkError
+
+        Http.BadStatus_ metadata _ ->
+            Err (Http.BadStatus metadata.statusCode)
+
+        Http.GoodStatus_ _ body ->
+            case Obj.Decode.decodeString toLength decoder body of
+                Ok a ->
+                    Ok a
+
+                Err err ->
+                    Err (Http.BadBody ("Failed to decode with: " ++ err))
+
+
+initWorld : Scene3d.Entity WorldSpace -> Scene3d.Entity WorldSpace -> World
+initWorld hiveMesh beeMesh =
     let
         baseWorld =
             { ecsConfig = Ecs.Config.init
@@ -197,6 +233,7 @@ initWorld hiveMesh =
                     |> Dict.fromList
             , hive = Nothing
             , hiveMesh = hiveMesh
+            , beeMesh = beeMesh
 
             -- Components
             , positionComp = Ecs.Component.empty
@@ -217,22 +254,9 @@ initWorld hiveMesh =
                 |> Ecs.Entity.with ( positionSpec, hexOrigin )
                 |> Ecs.Entity.with ( hiveSpec, Hive )
                 |> Ecs.Entity.with ( pollenSpec, 0 )
-                |> Ecs.Entity.with
-                    ( graphicsSpec
-                    , HiveG Color.brown
-                        (Block3d.from
-                            (Point3d.meters 0.5 0.5 1.5)
-                            (Point3d.meters -0.5 -0.5 0)
-                            |> Block3d.rotateAround Axis3d.z (Angle.degrees 45)
-                        )
-                    )
+                |> Ecs.Entity.with ( graphicsSpec, HiveG )
     in
     { worldWithHive | hive = Just hive }
-
-
-meshToWorldSpace : Frame3d Meters WorldSpace { defines : Obj.Decode.ObjCoordinates }
-meshToWorldSpace =
-    Frame3d.atOrigin
 
 
 createBee : Hex -> World -> World
@@ -243,13 +267,7 @@ createBee startPos world =
         |> Ecs.Entity.with ( animatedPositionSpec, ( startPos, ( 0, 0 ) ) )
         |> Ecs.Entity.with ( aiSpec, BeeAI )
         |> Ecs.Entity.with ( pollenSpec, 0 )
-        |> Ecs.Entity.with
-            ( graphicsSpec
-            , BeeG Color.yellow
-                (Sphere3d.atPoint (Point3d.meters 0 0 1)
-                    (Length.meters 0.25)
-                )
-            )
+        |> Ecs.Entity.with ( graphicsSpec, BeeG )
         |> Tuple.second
 
 
@@ -315,9 +333,8 @@ subscriptions model =
 
 
 type Msg
-    = NoOp
-    | Tick Float
-    | GotMesh (Result Http.Error CustomMesh)
+    = Tick Float
+    | GotMesh (Result Http.Error ( CustomMesh, CustomMesh ))
 
 
 type alias CustomMesh =
@@ -349,18 +366,35 @@ update msg model =
         ( GotMesh (Err err), Loading ) ->
             ( FailedToLoad (errorToString err), Cmd.none )
 
-        ( GotMesh (Ok mesh), Loading ) ->
+        ( GotMesh (Ok ( hiveTris, beeTris )), Loading ) ->
             let
+                hiveMeshUniform : Scene3d.Mesh.Uniform WorldSpace
                 hiveMeshUniform =
-                    Scene3d.Mesh.indexedFaces mesh
+                    Scene3d.Mesh.indexedFaces hiveTris
 
+                hiveMesh : Scene3d.Entity WorldSpace
                 hiveMesh =
                     Scene3d.meshWithShadow
                         (Scene3d.Material.matte Color.yellow)
                         hiveMeshUniform
                         (Scene3d.Mesh.shadow hiveMeshUniform)
+
+                beeMeshUniform : Scene3d.Mesh.Uniform WorldSpace
+                beeMeshUniform =
+                    Scene3d.Mesh.indexedFaces beeTris
+
+                beeShadow : Scene3d.Mesh.Shadow WorldSpace
+                beeShadow =
+                    Scene3d.Mesh.shadow hiveMeshUniform
+
+                beeMesh : Scene3d.Entity WorldSpace
+                beeMesh =
+                    Scene3d.meshWithShadow
+                        (Scene3d.Material.matte Color.yellow)
+                        beeMeshUniform
+                        beeShadow
             in
-            ( Loaded (initWorld hiveMesh), Cmd.none )
+            ( Loaded (initWorld hiveMesh beeMesh), Cmd.none )
 
         ( Tick deltaMs, Loaded world ) ->
             let
@@ -616,7 +650,7 @@ spawnFlower world =
 navigate : Ecs.System.System World
 navigate world =
     Ecs.System.indexedFoldl3
-        (\entity ( nextPos, animatedPos ) currentPos goal w ->
+        (\entity ( _, animatedPos ) currentPos goal w ->
             if currentPos == goal then
                 { w | goalComp = Ecs.Component.remove entity w.goalComp }
 
@@ -827,7 +861,7 @@ viewWorld world =
                                     pos
                         in
                         case graphics of
-                            BeeG _ _ ->
+                            BeeG ->
                                 entities
 
                             FlowerG c s ->
@@ -836,12 +870,8 @@ viewWorld world =
                                     (s |> Cylinder3d.translateBy (Vector3d.meters x y 0))
                                     :: entities
 
-                            HiveG c s ->
-                                -- Scene3d.blockWithShadow
-                                --     (Scene3d.Material.matte c)
-                                --     (s |> Block3d.translateBy (Vector3d.meters x y 0))
-                                world.hiveMesh
-                                    :: entities
+                            HiveG ->
+                                world.hiveMesh :: entities
                     )
                     world.positionComp
                     world.graphicsComp
@@ -849,16 +879,17 @@ viewWorld world =
                 ++ Ecs.System.foldl2
                     (\( _, ( x, y ) ) graphics entities ->
                         case graphics of
-                            BeeG c s ->
-                                Scene3d.sphereWithShadow
-                                    (Scene3d.Material.matte c)
-                                    (s |> Sphere3d.translateBy (Vector3d.meters x y 0))
+                            BeeG ->
+                                (world.beeMesh
+                                    |> Scene3d.scaleAbout Point3d.origin 0.5
+                                    |> Scene3d.translateBy (Vector3d.meters x y 1)
+                                )
                                     :: entities
 
                             FlowerG _ _ ->
                                 entities
 
-                            HiveG _ _ ->
+                            HiveG ->
                                 entities
                     )
                     world.animatedPositionComp
