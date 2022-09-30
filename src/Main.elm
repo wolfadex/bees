@@ -17,25 +17,31 @@ import Ecs.Config
 import Ecs.Entity
 import Ecs.System
 import Float.Extra
+import Frame3d exposing (Frame3d)
 import Hexagons.Hex exposing (Direction(..), Hex(..))
 import Hexagons.Layout
 import Hexagons.Map
-import Html
+import Html exposing (Html)
 import Html.Attributes
+import Http
 import Length exposing (Meters)
+import Obj.Decode
 import Pixels
-import Point3d
+import Point3d exposing (Point3d)
+import Quantity exposing (Unitless)
 import Random exposing (Seed)
 import Random.List
 import Scene3d
 import Scene3d.Material
+import Scene3d.Mesh
 import Set exposing (Set)
 import Sphere3d exposing (Sphere3d)
-import Vector3d
+import TriangularMesh exposing (TriangularMesh)
+import Vector3d exposing (Vector3d)
 import Viewpoint3d
 
 
-main : Program () World Msg
+main : Program () Model Msg
 main =
     Browser.document
         { init = init
@@ -131,12 +137,18 @@ pollenSpec =
     }
 
 
+type Model
+    = Loading
+    | Loaded World
+
+
 type alias World =
     { ecsConfig : Ecs.Config
     , seed : Seed
     , time : Float
     , board : Hexagons.Map.Map
     , hive : Maybe Ecs.Entity
+    , hiveMesh : Scene3d.Entity WorldSpace
 
     -- Components
     , positionComp : Ecs.Component Hex
@@ -154,8 +166,21 @@ type WorldSpace
     = WorldSpace Never
 
 
-init : () -> ( World, Cmd Msg )
+init : () -> ( Model, Cmd Msg )
 init () =
+    ( Loading
+    , Http.get
+        { url = "/assets/hive.obj"
+        , expect =
+            Obj.Decode.expectObj GotMesh
+                Length.meters
+                (Obj.Decode.facesIn Frame3d.atOrigin)
+        }
+    )
+
+
+initWorld : Scene3d.Entity WorldSpace -> World
+initWorld hiveMesh =
     let
         baseWorld =
             { ecsConfig = Ecs.Config.init
@@ -170,6 +195,7 @@ init () =
                     |> List.map (\hex -> ( Hexagons.Map.hashHex hex, hex ))
                     |> Dict.fromList
             , hive = Nothing
+            , hiveMesh = hiveMesh
 
             -- Components
             , positionComp = Ecs.Component.empty
@@ -200,9 +226,12 @@ init () =
                         )
                     )
     in
-    ( { worldWithHive | hive = Just hive }
-    , Cmd.none
-    )
+    { worldWithHive | hive = Just hive }
+
+
+meshToWorldSpace : Frame3d Meters WorldSpace { defines : Obj.Decode.ObjCoordinates }
+meshToWorldSpace =
+    Frame3d.atOrigin
 
 
 createBee : Hex -> World -> World
@@ -271,23 +300,50 @@ hexOrigin =
     IntCubeHex ( 0, 0, 0 )
 
 
-subscriptions : World -> Sub Msg
-subscriptions _ =
-    Browser.Events.onAnimationFrameDelta Tick
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    case model of
+        Loading ->
+            Sub.none
+
+        Loaded _ ->
+            Browser.Events.onAnimationFrameDelta Tick
 
 
 type Msg
     = NoOp
     | Tick Float
+    | GotMesh (Result Http.Error CustomMesh)
 
 
-update : Msg -> World -> ( World, Cmd Msg )
-update msg world =
-    case msg of
-        NoOp ->
-            ( world, Cmd.none )
+type alias CustomMesh =
+    TriangularMesh { position : Point3d Meters WorldSpace, normal : Vector3d Unitless WorldSpace }
 
-        Tick deltaMs ->
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case ( msg, model ) of
+        ( GotMesh (Err err), Loading ) ->
+            let
+                _ =
+                    Debug.log "mesh load err" err
+            in
+            ( model, Cmd.none )
+
+        ( GotMesh (Ok mesh), Loading ) ->
+            let
+                hiveMeshUniform =
+                    Scene3d.Mesh.indexedFaces mesh
+
+                hiveMesh =
+                    Scene3d.meshWithShadow
+                        (Scene3d.Material.matte Color.yellow)
+                        hiveMeshUniform
+                        (Scene3d.Mesh.shadow hiveMeshUniform)
+            in
+            ( Loaded (initWorld hiveMesh), Cmd.none )
+
+        ( Tick deltaMs, Loaded world ) ->
             let
                 totalTime =
                     world.time + deltaMs
@@ -304,8 +360,12 @@ update msg world =
             ( { world | time = remainingTime }
                 |> runAnimation interpolateDist
                 |> runTicks ticksToRun
+                |> Loaded
             , Cmd.none
             )
+
+        _ ->
+            ( model, Cmd.none )
 
 
 runAnimation : Float -> World -> World
@@ -687,119 +747,130 @@ assignGoal world =
             world
 
 
-view : World -> Browser.Document Msg
-view world =
+view : Model -> Browser.Document Msg
+view model =
     { title = "Bees!!"
     , body =
-        [ Scene3d.sunny
-            { upDirection = Direction3d.positiveZ
-            , sunlightDirection = Direction3d.negativeZ
-            , shadows = True
-            , dimensions = ( Pixels.int 800, Pixels.int 600 )
-            , camera =
-                -- Camera3d.perspective
-                --     { viewpoint =
-                --         Viewpoint3d.lookAt
-                --             { eyePoint = Point3d.meters 0 -5 5
-                --             , focalPoint = Point3d.origin
-                --             , upDirection = Direction3d.positiveZ
-                --             }
-                --     , verticalFieldOfView = Angle.degrees 90
-                --     }
-                Camera3d.orthographic
-                    { viewpoint =
-                        Viewpoint3d.lookAt
-                            { eyePoint = Point3d.meters 0 -5 5
-                            , focalPoint = Point3d.origin
-                            , upDirection = Direction3d.positiveZ
-                            }
-                    , viewportHeight = Length.meters 12
-                    }
-            , clipDepth = Length.meters 0.001
-            , background = Scene3d.backgroundColor Color.black
-            , entities =
-                Scene3d.cylinderWithShadow
-                    (Scene3d.Material.matte Color.green)
-                    (Cylinder3d.centeredOn (Point3d.meters 0 0 -1.5)
-                        Direction3d.positiveZ
-                        { radius = Length.meters 7
-                        , length = Length.meters 3
-                        }
-                    )
-                    :: Ecs.System.foldl2
-                        (\pos graphics entities ->
-                            let
-                                ( x, y ) =
-                                    gameHexToPoint
-                                        pos
-                            in
-                            case graphics of
-                                BeeG _ _ ->
-                                    entities
+        case model of
+            Loading ->
+                [ Html.text "Loading..." ]
 
-                                FlowerG c s ->
-                                    Scene3d.cylinderWithShadow
-                                        (Scene3d.Material.matte c)
-                                        (s |> Cylinder3d.translateBy (Vector3d.meters x y 0))
-                                        :: entities
-
-                                HiveG c s ->
-                                    Scene3d.blockWithShadow
-                                        (Scene3d.Material.matte c)
-                                        (s |> Block3d.translateBy (Vector3d.meters x y 0))
-                                        :: entities
-                        )
-                        world.positionComp
-                        world.graphicsComp
-                        []
-                    ++ Ecs.System.foldl2
-                        (\( _, ( x, y ) ) graphics entities ->
-                            case graphics of
-                                BeeG c s ->
-                                    Scene3d.sphereWithShadow
-                                        (Scene3d.Material.matte c)
-                                        (s |> Sphere3d.translateBy (Vector3d.meters x y 0))
-                                        :: entities
-
-                                FlowerG _ _ ->
-                                    entities
-
-                                HiveG _ _ ->
-                                    entities
-                        )
-                        world.animatedPositionComp
-                        world.graphicsComp
-                        []
-            }
-        , Ecs.System.foldl2
-            (\pollen _ res ->
-                Html.span
-                    []
-                    [ Html.text ("Hive pollen count: " ++ String.fromInt pollen) ]
-                    :: res
-            )
-            world.pollenComp
-            world.hiveComp
-            []
-            |> Html.div
-                [ Html.Attributes.style "display" "flex"
-                , Html.Attributes.style "flex-direction" "column"
-                ]
-        , Ecs.System.foldl2
-            (\pollen ai res ->
-                case ai of
-                    BeeAI ->
-                        Html.span
-                            []
-                            [ Html.text ("Bee pollen count: " ++ String.fromInt pollen) ]
-                            :: res
-            )
-            world.pollenComp
-            world.aiComp
-            []
-            |> Html.div
-                [ Html.Attributes.style "display" "flex"
-                , Html.Attributes.style "flex-direction" "column"
-                ]
-        ]
+            Loaded world ->
+                viewWorld world
     }
+
+
+viewWorld : World -> List (Html Msg)
+viewWorld world =
+    [ Scene3d.sunny
+        { upDirection = Direction3d.positiveZ
+        , sunlightDirection = Direction3d.negativeZ
+        , shadows = True
+        , dimensions = ( Pixels.int 800, Pixels.int 600 )
+        , camera =
+            -- Camera3d.perspective
+            --     { viewpoint =
+            --         Viewpoint3d.lookAt
+            --             { eyePoint = Point3d.meters 0 -5 5
+            --             , focalPoint = Point3d.origin
+            --             , upDirection = Direction3d.positiveZ
+            --             }
+            --     , verticalFieldOfView = Angle.degrees 90
+            --     }
+            Camera3d.orthographic
+                { viewpoint =
+                    Viewpoint3d.lookAt
+                        { eyePoint = Point3d.meters 0 -5 5
+                        , focalPoint = Point3d.origin
+                        , upDirection = Direction3d.positiveZ
+                        }
+                , viewportHeight = Length.meters 12
+                }
+        , clipDepth = Length.meters 0.001
+        , background = Scene3d.backgroundColor Color.black
+        , entities =
+            Scene3d.cylinderWithShadow
+                (Scene3d.Material.matte Color.green)
+                (Cylinder3d.centeredOn (Point3d.meters 0 0 -1.5)
+                    Direction3d.positiveZ
+                    { radius = Length.meters 7
+                    , length = Length.meters 3
+                    }
+                )
+                :: Ecs.System.foldl2
+                    (\pos graphics entities ->
+                        let
+                            ( x, y ) =
+                                gameHexToPoint
+                                    pos
+                        in
+                        case graphics of
+                            BeeG _ _ ->
+                                entities
+
+                            FlowerG c s ->
+                                Scene3d.cylinderWithShadow
+                                    (Scene3d.Material.matte c)
+                                    (s |> Cylinder3d.translateBy (Vector3d.meters x y 0))
+                                    :: entities
+
+                            HiveG c s ->
+                                -- Scene3d.blockWithShadow
+                                --     (Scene3d.Material.matte c)
+                                --     (s |> Block3d.translateBy (Vector3d.meters x y 0))
+                                world.hiveMesh
+                                    :: entities
+                    )
+                    world.positionComp
+                    world.graphicsComp
+                    []
+                ++ Ecs.System.foldl2
+                    (\( _, ( x, y ) ) graphics entities ->
+                        case graphics of
+                            BeeG c s ->
+                                Scene3d.sphereWithShadow
+                                    (Scene3d.Material.matte c)
+                                    (s |> Sphere3d.translateBy (Vector3d.meters x y 0))
+                                    :: entities
+
+                            FlowerG _ _ ->
+                                entities
+
+                            HiveG _ _ ->
+                                entities
+                    )
+                    world.animatedPositionComp
+                    world.graphicsComp
+                    []
+        }
+    , Ecs.System.foldl2
+        (\pollen _ res ->
+            Html.span
+                []
+                [ Html.text ("Hive pollen count: " ++ String.fromInt pollen) ]
+                :: res
+        )
+        world.pollenComp
+        world.hiveComp
+        []
+        |> Html.div
+            [ Html.Attributes.style "display" "flex"
+            , Html.Attributes.style "flex-direction" "column"
+            ]
+    , Ecs.System.foldl2
+        (\pollen ai res ->
+            case ai of
+                BeeAI ->
+                    Html.span
+                        []
+                        [ Html.text ("Bee pollen count: " ++ String.fromInt pollen) ]
+                        :: res
+        )
+        world.pollenComp
+        world.aiComp
+        []
+        |> Html.div
+            [ Html.Attributes.style "display" "flex"
+            , Html.Attributes.style "flex-direction" "column"
+            ]
+    ]
