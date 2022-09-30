@@ -2,7 +2,7 @@
   "targets": {
     "bee simulation": {
       "inputs": ["src/Main.elm"],
-      "output": "dist/elm.js"
+      "output": "docs/elm.js"
     }
   }
 }

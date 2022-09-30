@@ -4,7 +4,7 @@
   "description": "A thing about bees",
   "main": "index.js",
   "scripts": {
-    "dev": "http-server dist & elm-watch hot"
+    "dev": "http-server docs & elm-watch hot"
   },
   "author": "Wolfgang Schuster",
   "devDependencies": {
