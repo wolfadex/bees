@@ -494,7 +494,7 @@ ${variant}`;
   var VERSION = "1.0.2";
   var TARGET_NAME = "bee simulation";
   var INITIAL_ELM_COMPILED_TIMESTAMP = Number(
-    "1664512290374"
+    "1664512794785"
   );
   var ORIGINAL_COMPILATION_MODE = "debug";
   var WEBSOCKET_PORT = "57312";
@@ -16176,7 +16176,7 @@ var $author$project$Main$init = function (_v0) {
 					$author$project$Main$GotMesh,
 					$ianmackenzie$elm_units$Length$meters,
 					$w0rm$elm_obj_file$Obj$Decode$facesIn($ianmackenzie$elm_geometry$Frame3d$atOrigin)),
-				url: '/assets/hive.obj'
+				url: 'assets/hive.obj'
 			}));
 };
 var $author$project$Main$Tick = function (a) {

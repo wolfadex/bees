@@ -170,7 +170,7 @@ init : () -> ( Model, Cmd Msg )
 init () =
     ( Loading
     , Http.get
-        { url = "/assets/hive.obj"
+        { url = "assets/hive.obj"
         , expect =
             Obj.Decode.expectObj GotMesh
                 Length.meters
