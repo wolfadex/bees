@@ -16,6 +16,7 @@ import Ecs.Component
 import Ecs.Config
 import Ecs.Entity
 import Ecs.System
+import Float.Extra
 import Hexagons.Hex exposing (Direction(..), Hex(..))
 import Hexagons.Layout
 import Hexagons.Map
@@ -56,6 +57,17 @@ positionSpec =
     { get = .positionComp
     , set = \comp world -> { world | positionComp = comp }
     }
+
+
+animatedPositionSpec : Ecs.Component.Spec ( Hex, Pnt ) { world | animatedPositionComp : Ecs.Component ( Hex, Pnt ) }
+animatedPositionSpec =
+    { get = .animatedPositionComp
+    , set = \comp world -> { world | animatedPositionComp = comp }
+    }
+
+
+type alias Pnt =
+    ( Float, Float )
 
 
 
@@ -128,6 +140,7 @@ type alias World =
 
     -- Components
     , positionComp : Ecs.Component Hex
+    , animatedPositionComp : Ecs.Component ( Hex, Pnt )
     , goalComp : Ecs.Component Hex
     , aiComp : Ecs.Component AI
     , graphicsComp : Ecs.Component Graphics
@@ -160,6 +173,7 @@ init () =
 
             -- Components
             , positionComp = Ecs.Component.empty
+            , animatedPositionComp = Ecs.Component.empty
             , goalComp = Ecs.Component.empty
             , aiComp = Ecs.Component.empty
             , graphicsComp = Ecs.Component.empty
@@ -196,6 +210,7 @@ createBee startPos world =
     world
         |> Ecs.Entity.create ecsConfigSpec
         |> Ecs.Entity.with ( positionSpec, startPos )
+        |> Ecs.Entity.with ( animatedPositionSpec, ( startPos, ( 0, 0 ) ) )
         |> Ecs.Entity.with ( aiSpec, BeeAI )
         |> Ecs.Entity.with ( pollenSpec, 0 )
         |> Ecs.Entity.with
@@ -247,6 +262,7 @@ removeFlower entity world =
         |> Ecs.Entity.remove pollenSpec
         |> Ecs.Entity.remove flowerSpec
         |> Ecs.Entity.remove graphicsSpec
+        |> Ecs.Entity.delete ecsConfigSpec
         |> Tuple.second
 
 
@@ -281,10 +297,52 @@ update msg world =
 
                 remainingTime =
                     totalTime - toFloat ticksToRun * tickTime
+
+                interpolateDist =
+                    min 1 (totalTime / tickTime)
             in
-            ( runTicks ticksToRun { world | time = remainingTime }
+            ( { world | time = remainingTime }
+                |> runAnimation interpolateDist
+                |> runTicks ticksToRun
             , Cmd.none
             )
+
+
+runAnimation : Float -> World -> World
+runAnimation t =
+    Ecs.System.map2
+        (\( currentPos, setPos ) ( ( nextPos, _ ), setAnimatedPosition ) ->
+            let
+                ( x, y ) =
+                    gameHexToPoint
+                        nextPos
+
+                ( px, py ) =
+                    gameHexToPoint
+                        currentPos
+            in
+            if t >= 1 then
+                setPos nextPos
+
+            else
+                setAnimatedPosition
+                    ( nextPos
+                    , ( Float.Extra.interpolateFrom px x t
+                      , Float.Extra.interpolateFrom py y t
+                      )
+                    )
+        )
+        positionSpec
+        animatedPositionSpec
+
+
+gameHexToPoint : Hex -> Pnt
+gameHexToPoint =
+    Hexagons.Layout.hexToPoint
+        { orientation = Hexagons.Layout.orientationLayoutPointy
+        , size = ( 1, 1 )
+        , origin = ( 0, 0 )
+        }
 
 
 runTicks : Int -> World -> World
@@ -305,7 +363,7 @@ runTicks ticksToRun world =
 
 
 tickTime =
-    250
+    500
 
 
 spawnBees : Ecs.System.System World
@@ -478,9 +536,9 @@ spawnFlower world =
 
 navigate : Ecs.System.System World
 navigate world =
-    Ecs.System.indexedFoldl2
-        (\entity position goal w ->
-            if position == goal then
+    Ecs.System.indexedFoldl3
+        (\entity ( nextPos, animatedPos ) currentPos goal w ->
+            if currentPos == goal then
                 { w | goalComp = Ecs.Component.remove entity w.goalComp }
 
             else
@@ -489,21 +547,32 @@ navigate world =
                         AStar.Generalised.findPath
                             hexCost
                             (hexNeighbors w.board)
-                            (Hexagons.Map.hashHex position)
+                            (Hexagons.Map.hashHex currentPos)
                             (Hexagons.Map.hashHex goal)
                 in
                 case path of
                     Just (next :: _) ->
                         let
-                            nextPos : Hex
-                            nextPos =
+                            nextPosition : Hex
+                            nextPosition =
                                 IntCubeHex next
                         in
-                        { w | positionComp = Ecs.Component.set entity nextPos w.positionComp }
+                        { w
+                            | animatedPositionComp =
+                                Ecs.Component.set entity
+                                    ( nextPosition, animatedPos )
+                                    w.animatedPositionComp
+
+                            -- , positionComp =
+                            --     Ecs.Component.set entity
+                            --         currentPos
+                            --         w.positionComp
+                        }
 
                     _ ->
                         w
         )
+        world.animatedPositionComp
         world.positionComp
         world.goalComp
         world
@@ -628,72 +697,79 @@ view world =
             , shadows = True
             , dimensions = ( Pixels.int 800, Pixels.int 600 )
             , camera =
-                Camera3d.perspective
+                -- Camera3d.perspective
+                --     { viewpoint =
+                --         Viewpoint3d.lookAt
+                --             { eyePoint = Point3d.meters 0 -5 5
+                --             , focalPoint = Point3d.origin
+                --             , upDirection = Direction3d.positiveZ
+                --             }
+                --     , verticalFieldOfView = Angle.degrees 90
+                --     }
+                Camera3d.orthographic
                     { viewpoint =
                         Viewpoint3d.lookAt
-                            { eyePoint = Point3d.meters 0 -3 7
+                            { eyePoint = Point3d.meters 0 -5 5
                             , focalPoint = Point3d.origin
                             , upDirection = Direction3d.positiveZ
                             }
-                    , verticalFieldOfView = Angle.degrees 90
+                    , viewportHeight = Length.meters 12
                     }
             , clipDepth = Length.meters 0.001
             , background = Scene3d.backgroundColor Color.black
             , entities =
-                Ecs.System.foldl2
-                    (\pos graphics entities ->
-                        let
-                            ( x, y ) =
-                                Hexagons.Layout.hexToPoint
-                                    { orientation = Hexagons.Layout.orientationLayoutPointy
-                                    , size = ( 1, 1 )
-                                    , origin = ( 0, 0 )
-                                    }
-                                    pos
-
-                            graphicsEntity =
-                                case graphics of
-                                    BeeG c s ->
-                                        Scene3d.sphereWithShadow
-                                            (Scene3d.Material.matte c)
-                                            (s |> Sphere3d.translateBy (Vector3d.meters x y 0))
-
-                                    FlowerG c s ->
-                                        Scene3d.cylinderWithShadow
-                                            (Scene3d.Material.matte c)
-                                            (s |> Cylinder3d.translateBy (Vector3d.meters x y 0))
-
-                                    HiveG c s ->
-                                        Scene3d.blockWithShadow
-                                            (Scene3d.Material.matte c)
-                                            (s |> Block3d.translateBy (Vector3d.meters x y 0))
-                        in
-                        graphicsEntity :: entities
+                Scene3d.cylinderWithShadow
+                    (Scene3d.Material.matte Color.green)
+                    (Cylinder3d.centeredOn Point3d.origin
+                        Direction3d.positiveZ
+                        { radius = Length.meters 7
+                        , length = Length.meters 0.25
+                        }
                     )
-                    world.positionComp
-                    world.graphicsComp
-                    []
-                    ++ (world.board
-                            |> Dict.values
-                            |> List.map
-                                (Hexagons.Layout.hexToPoint
-                                    { orientation = Hexagons.Layout.orientationLayoutPointy
-                                    , size = ( 1, 1 )
-                                    , origin = ( 0, 0 )
-                                    }
-                                )
-                            |> List.map
-                                (\( x, y ) ->
+                    :: Ecs.System.foldl2
+                        (\pos graphics entities ->
+                            let
+                                ( x, y ) =
+                                    gameHexToPoint
+                                        pos
+                            in
+                            case graphics of
+                                BeeG _ _ ->
+                                    entities
+
+                                FlowerG c s ->
                                     Scene3d.cylinderWithShadow
-                                        (Scene3d.Material.matte Color.green)
-                                        (Cylinder3d.centeredOn (Point3d.meters x y 0)
-                                            Direction3d.positiveZ
-                                            { radius = Length.meters 0.85
-                                            , length = Length.meters 0.25
-                                            }
-                                        )
-                                )
-                       )
+                                        (Scene3d.Material.matte c)
+                                        (s |> Cylinder3d.translateBy (Vector3d.meters x y 0))
+                                        :: entities
+
+                                HiveG c s ->
+                                    Scene3d.blockWithShadow
+                                        (Scene3d.Material.matte c)
+                                        (s |> Block3d.translateBy (Vector3d.meters x y 0))
+                                        :: entities
+                        )
+                        world.positionComp
+                        world.graphicsComp
+                        []
+                    ++ Ecs.System.foldl2
+                        (\( _, ( x, y ) ) graphics entities ->
+                            case graphics of
+                                BeeG c s ->
+                                    Scene3d.sphereWithShadow
+                                        (Scene3d.Material.matte c)
+                                        (s |> Sphere3d.translateBy (Vector3d.meters x y 0))
+                                        :: entities
+
+                                FlowerG _ _ ->
+                                    entities
+
+                                HiveG _ _ ->
+                                    entities
+                        )
+                        world.animatedPositionComp
+                        world.graphicsComp
+                        []
             }
         , Ecs.System.foldl2
             (\pollen _ res ->
